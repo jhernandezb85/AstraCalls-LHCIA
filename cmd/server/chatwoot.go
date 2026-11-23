@@ -530,7 +530,7 @@ func formatReferralNote(ref map[string]any) string {
 	b.WriteString("📢 *El contacto llegó por un anuncio (Click to WhatsApp)*")
 	line := func(label, key string) {
 		if v, ok := ref[key].(string); ok && v != "" {
-			b.WriteString("\n• " + label + ": " + v)
+			b.WriteString("\n• " + label + ": " + plainLines(v))
 		}
 	}
 	line("Título", "title")
@@ -542,6 +542,16 @@ func formatReferralNote(ref map[string]any) string {
 	line("Origen", "utmSource")
 	line("Medio", "utmMedium")
 	return b.String()
+}
+
+// plainLines tira a indentação de cada linha: no Chatwoot (markdown), linhas que
+// começam com 4+ espaços viram bloco de código com barra de rolagem.
+func plainLines(s string) string {
+	lines := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimLeft(l, " \t ")
+	}
+	return strings.Join(lines, "\n")
 }
 
 // deliverContent monta a parte de CONTEÚDO do job a partir do evento (texto já

@@ -60,6 +60,10 @@ func TestFormatReferralNote(t *testing.T) {
 	if !strings.Contains(note, "ARzYABCDEF123") {
 		t.Errorf("nota sem ctwa_clid: %q", note)
 	}
+	indented := formatReferralNote(map[string]any{"body": "Intro\n\n    ⚙️ Motor\n\t🏔️ Turbo"})
+	if strings.Contains(indented, "\n    ") || strings.Contains(indented, "\n\t") {
+		t.Errorf("descrição com indentação vira bloco de código no Chatwoot: %q", indented)
+	}
 	if formatReferralNote(nil) != "" {
 		t.Error("referral nil deveria dar nota vazia")
 	}
