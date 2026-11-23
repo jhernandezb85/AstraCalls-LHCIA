@@ -79,6 +79,18 @@ type ChatwootConfig struct {
 	// ImportHistoryDays limita a janela (0 = importHistoryDefaultDays).
 	ImportHistory     bool `json:"import_history"`
 	ImportHistoryDays int  `json:"import_history_days"`
+	// MirrorAsOutgoing: o que a conta enviou PELO APARELHO entra como mensagem de
+	// SAÍDA normal (bolha do atendente) em vez de nota privada com o título "Enviado
+	// pelo aparelho". Não há risco de reenvio: a mensagem leva o source_id do
+	// WhatsApp e o webhook ignora esses ecos. O que sai pela API (mirror_api, ex.:
+	// n8n/bots) continua como nota privada: no Chatwoot uma mensagem de saída de um
+	// usuário conta como resposta humana e ABRE conversas pendentes (ex.: Captain),
+	// o que quebraria fluxos automatizados.
+	MirrorAsOutgoing bool `json:"mirror_as_outgoing"`
+	// ReadReceipts: reflete no Chatwoot os recibos do WhatsApp — "entregue" e "lida"
+	// viram o status da mensagem (os tiques ✓✓) e "lida" também atualiza o
+	// last_seen do contato na conversa (mesma técnica da Evolution API).
+	ReadReceipts bool `json:"read_receipts"`
 }
 
 // Limites da importação de histórico (evitam afogar a inbox do Chatwoot).
@@ -276,6 +288,17 @@ func (s *Session) shouldMirrorOwn(msgID string, cfg ChatwootConfig) bool {
 	return origin == selfSentAPI && cfg.MirrorAPI
 }
 
+// mirrorOutgoing diz se uma mensagem from_me espelhada entra como SAÍDA normal: só
+// com mirror_as_outgoing e só se veio do APARELHO. O que saiu pela nossa API segue
+// como nota privada (ver MirrorAsOutgoing).
+func (s *Session) mirrorOutgoing(cfg ChatwootConfig, msgID string) bool {
+	if !cfg.MirrorAsOutgoing {
+		return false
+	}
+	_, viaUs := s.selfSentOrigin(msgID)
+	return !viaUs
+}
+
 func (s *Session) chatwootPushIncoming(evt *events.Message) {
 	cfg := s.getChatwoot()
 	if !cfg.valid() {
@@ -332,6 +355,11 @@ func (s *Session) chatwootMirrorOwn(cfg ChatwootConfig, evt *events.Message) {
 	}
 	avatar := s.cachedAvatar(chat)
 	j := deliverContent(evt, mirrorDeviceTitle, true)
+	if s.mirrorOutgoing(cfg, evt.Info.ID) {
+		// bolha de saída normal, sem o título de espelho
+		j = deliverContent(evt, "", false)
+		j.Outgoing = true
+	}
 	j.ChatID = chatID
 	j.Phone = phone
 	j.AltID = altID
@@ -428,6 +456,10 @@ func (s *Session) chatwootMirrorOwnGroup(cfg ChatwootConfig, evt *events.Message
 		author = "Você"
 	}
 	j := deliverContent(evt, mirrorDeviceTitle+"*"+author+" (você)*:\n", true)
+	if s.mirrorOutgoing(cfg, evt.Info.ID) {
+		j = deliverContent(evt, "", false)
+		j.Outgoing = true
+	}
 	j.ChatID = chatID
 	j.Name = name
 	j.Avatar = avatar
@@ -489,6 +521,7 @@ type cwJob struct {
 	Avatar    string          `json:"avatar"`             // URL do avatar (best-effort)
 	Prefix    string          `json:"prefix"`             // prefixo colado antes do texto (autor em grupo, título de espelho)
 	Private   bool            `json:"private"`            // nota privada (espelho do que saiu por fora)
+	Outgoing  bool            `json:"outgoing,omitempty"` // mensagem de SAÍDA normal (espelho com mirror_as_outgoing)
 	Text      string          `json:"text"`               // texto final já formatado
 	SourceID  string          `json:"sourceId"`           // = ID da msg do WhatsApp; idempotência no Chatwoot (dedup na reentrega)
 	InReplyTo string          `json:"inReplyTo"`          // ID da msg citada (resposta)
@@ -613,8 +646,12 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 				data, derr := s.client.Download(context.Background(), dl)
 				if derr == nil && len(data) > 0 {
 					fname, mime := mediaMeta(&msg)
-					if perr := cfg.postAttachment(convID, j.Prefix+j.Text, fname, mime, data, dirFromPrivate(j.Private), j.SourceID, j.InReplyTo, 0, j.Attrs); perr != nil {
+					cwID, perr := cfg.postAttachmentID(convID, j.Prefix+j.Text, fname, mime, data, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+					if perr != nil {
 						return fmt.Errorf("post attachment: %w", perr)
+					}
+					if j.Outgoing {
+						s.rememberCWMessage(j.SourceID, convID, cwID)
 					}
 					return nil
 				}
@@ -624,10 +661,22 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 	if strings.TrimSpace(j.Text) == "" {
 		return nil
 	}
-	if err := cfg.postText(convID, j.Prefix+j.Text, dirFromPrivate(j.Private), j.SourceID, j.InReplyTo, 0, j.Attrs); err != nil {
+	cwID, err := cfg.postTextID(convID, j.Prefix+j.Text, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+	if err != nil {
 		return fmt.Errorf("post message: %w", err)
 	}
+	if j.Outgoing {
+		s.rememberCWMessage(j.SourceID, convID, cwID)
+	}
 	return nil
+}
+
+// dir é a direção com que o job é postado no Chatwoot.
+func (j cwJob) dir() cwDir {
+	if j.Outgoing {
+		return cwOutgoing
+	}
+	return dirFromPrivate(j.Private)
 }
 
 // avatarSynced evita re-sincronizar a foto a cada mensagem (1x por contato/processo).
@@ -900,6 +949,13 @@ func (d cwDir) applyDir(body map[string]any) {
 }
 
 func (c ChatwootConfig) postText(convID int, content string, dir cwDir, sourceID, inReplyTo string, createdAt int64, extra map[string]any) error {
+	_, err := c.postTextID(convID, content, dir, sourceID, inReplyTo, createdAt, extra)
+	return err
+}
+
+// postTextID é o postText que devolve o ID da mensagem criada no Chatwoot (0 se o
+// Chatwoot não o informar) — usado para acompanhar o status (entregue/lida).
+func (c ChatwootConfig) postTextID(convID int, content string, dir cwDir, sourceID, inReplyTo string, createdAt int64, extra map[string]any) (int, error) {
 	body := map[string]any{"content": content, "content_type": "text"}
 	dir.applyDir(body)
 	if sourceID != "" {
@@ -908,18 +964,24 @@ func (c ChatwootConfig) postText(convID int, content string, dir cwDir, sourceID
 	if ca := contentAttrs(inReplyTo, createdAt, extra); ca != nil {
 		body["content_attributes"] = ca
 	}
-	_, code, e := c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/messages", convID), body)
+	res, code, e := c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/messages", convID), body)
 	if e != nil {
-		return e
+		return 0, e
 	}
 	if code >= 300 {
-		return fmt.Errorf("post message http %d", code)
+		return 0, fmt.Errorf("post message http %d", code)
 	}
-	return nil
+	return asInt(res["id"]), nil
 }
 
 // postAttachment sobe a mídia como anexo (multipart) numa mensagem incoming.
 func (c ChatwootConfig) postAttachment(convID int, content, filename, mime string, data []byte, dir cwDir, sourceID, inReplyTo string, createdAt int64, extra map[string]any) error {
+	_, err := c.postAttachmentID(convID, content, filename, mime, data, dir, sourceID, inReplyTo, createdAt, extra)
+	return err
+}
+
+// postAttachmentID é o postAttachment que devolve o ID da mensagem criada (0 se ausente).
+func (c ChatwootConfig) postAttachmentID(convID int, content, filename, mime string, data []byte, dir cwDir, sourceID, inReplyTo string, createdAt int64, extra map[string]any) (int, error) {
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
 	switch dir {
@@ -951,19 +1013,23 @@ func (c ChatwootConfig) postAttachment(convID int, content, filename, mime strin
 	url := c.base() + fmt.Sprintf("/conversations/%d/messages", convID)
 	req, err := http.NewRequest(http.MethodPost, url, &buf)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	req.Header.Set("api_access_token", c.AccountToken)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	resp, err := cwHTTP.Do(req)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("post attachment http %d", resp.StatusCode)
+		return 0, fmt.Errorf("post attachment http %d", resp.StatusCode)
 	}
-	return nil
+	var out map[string]any
+	if raw, rerr := io.ReadAll(resp.Body); rerr == nil {
+		_ = json.Unmarshal(raw, &out)
+	}
+	return asInt(out["id"]), nil
 }
 
 // ---------- Chatwoot -> WhatsApp (saída via webhook) ----------
@@ -1113,9 +1179,12 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// grava o source_id na mensagem de SAÍDA do Chatwoot (amarra citação cliente->agente)
+	cwConvID := asInt(asMap(body["conversation"])["id"])
 	if waMsgID != "" {
 		if cwMsgID := asInt(body["id"]); cwMsgID != 0 {
 			go sess.setMessageSourceID(cwMsgID, waMsgID)
+			// acompanha os recibos (entregue/lida) desta mensagem do agente
+			sess.rememberCWMessage(waMsgID, cwConvID, cwMsgID)
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
@@ -1133,6 +1202,13 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		s.log.Error("chatwoot->wa: nenhuma mensagem enviada; sinalizando falha ao Chatwoot",
 			"chat", chatID, "err", errMsg)
+		// com read_receipts, a mensagem fica marcada como "falhou" (com o motivo) no
+		// Chatwoot, visível para o atendente.
+		if cfg := sess.getChatwoot(); cfg.ReadReceipts {
+			if cwMsgID := asInt(body["id"]); cwMsgID != 0 && cwConvID != 0 {
+				go cfg.setMessageStatus(cwConvID, cwMsgID, "failed", errMsg)
+			}
+		}
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": errMsg, "status": "not_sent"})
 		return
 	}

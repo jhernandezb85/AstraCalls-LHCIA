@@ -848,6 +848,7 @@ func (s *Session) handleEvent(rawEvt any) {
 			go s.handleUnavailableViewOnce(evt)
 		}
 	case *events.Receipt:
+		go s.chatwootOnReceipt(evt) // tiques entregue/lida no Chatwoot (read_receipts)
 		s.dispatchWebhook("receipt", map[string]any{
 			"chat": evt.Chat.String(), "sender": evt.Sender.String(),
 			"type": string(evt.Type), "ids": evt.MessageIDs,
