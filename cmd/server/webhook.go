@@ -261,9 +261,9 @@ func messageText(m *waE2E.Message) string {
 	if gs := groupStatusInner(m); gs != nil {
 		// status do grupo (24 h na aba Atualizações): aparece no histórico com rótulo.
 		if t := messageText(gs); t != "" {
-			return "📢 Status do grupo: " + t
+			return "📢 Estado del grupo: " + t
 		}
-		return "📢 Status do grupo"
+		return "📢 Estado del grupo"
 	}
 	switch {
 	case m.GetConversation() != "":

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -32,7 +34,7 @@ const (
 	deviceModeKeep = "keep"
 	deviceModeNote = "note"
 
-	defaultDeviceTitle = "📲 Enviado pelo aparelho"
+	defaultDeviceTitle = "📱 Enviado desde el celular"
 
 	// janela em que um message_updated de mensagem nunca enviada é tratado como
 	// "Reenviar" (evita reenviar mensagens antigas por qualquer outra atualização)
@@ -201,6 +203,21 @@ func (c ChatwootConfig) messageState(convID, msgID int) (status, sourceID string
 		}
 	}
 	return "", "", false
+}
+
+// chatwootFailReason traduz a falha de envio num motivo curto para o atendente.
+func chatwootFailReason(err error) string {
+	switch {
+	case err == nil:
+		return "No se pudo enviar por WhatsApp. Pulsa Reenviar para intentarlo de nuevo."
+	case errors.Is(err, whatsmeow.ErrNotLoggedIn), errors.Is(err, whatsmeow.ErrNotConnected):
+		return "El número no está conectado a WhatsApp. Reconéctalo y pulsa Reenviar."
+	case errors.Is(err, whatsmeow.ErrRecipientNotOnWhatsApp):
+		return "Este número no tiene WhatsApp."
+	case errors.Is(err, whatsmeow.ErrNoPermissionInGroup):
+		return "Solo los administradores pueden escribir en este grupo."
+	}
+	return "No se pudo enviar por WhatsApp. Pulsa Reenviar para intentarlo de nuevo."
 }
 
 var cwRelaying sync.Map // "<sessão>|<id da msg no Chatwoot>" -> struct{}

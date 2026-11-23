@@ -38,7 +38,7 @@ func TestOrderText(t *testing.T) {
 		TotalCurrencyCode: proto.String("BRL"),
 	}
 	got := orderText(om)
-	for _, want := range []string{"Pedido recebido", "3 item", "BRL 150.00", "ORD-99"} {
+	for _, want := range []string{"Pedido recibido", "3 artículo", "BRL 150.00", "ORD-99"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("orderText não contém %q. Saída:\n%s", want, got)
 		}

@@ -29,7 +29,7 @@ func contactText(cm *waE2E.ContactMessage) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("👤 *Contato")
+	b.WriteString("👤 *Contacto")
 	if name := cm.GetDisplayName(); name != "" {
 		b.WriteString(": " + name)
 	}
@@ -47,7 +47,7 @@ func contactsArrayText(cam *waE2E.ContactsArrayMessage) string {
 	}
 	contacts := cam.GetContacts()
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("👤 *%d contatos compartilhados*", len(contacts)))
+	b.WriteString(fmt.Sprintf("👤 *%d contactos compartidos*", len(contacts)))
 	for _, c := range contacts {
 		line := "\n• " + c.GetDisplayName()
 		if phones := vcardPhones(c.GetVcard()); len(phones) > 0 {

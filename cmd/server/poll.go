@@ -33,15 +33,15 @@ func pollText(p *waE2E.PollCreationMessage) string {
 	}
 	name := p.GetName()
 	if name == "" {
-		name = "Enquete"
+		name = "Encuesta"
 	}
 	var b strings.Builder
-	b.WriteString("📊 *Enquete: " + name + "*")
+	b.WriteString("📊 *Encuesta: " + name + "*")
 	for i, opt := range p.GetOptions() {
 		b.WriteString(fmt.Sprintf("\n%d. %s", i+1, opt.GetOptionName()))
 	}
 	if n := p.GetSelectableOptionsCount(); n > 1 {
-		b.WriteString(fmt.Sprintf("\n_(escolha até %d opções)_", n))
+		b.WriteString(fmt.Sprintf("\n_(elige hasta %d opciones)_", n))
 	}
 	return b.String()
 }
@@ -65,9 +65,9 @@ func matchVoteOptions(selected [][]byte, options []string) []string {
 // pollVoteText formata um voto recebido (quem votou + opções escolhidas).
 func pollVoteText(voter string, names []string) string {
 	if len(names) == 0 {
-		return "🗳️ " + voter + " retirou o voto na enquete"
+		return "🗳️ " + voter + " retiró su voto de la encuesta"
 	}
-	return "🗳️ " + voter + " votou: " + strings.Join(names, ", ")
+	return "🗳️ " + voter + " votó: " + strings.Join(names, ", ")
 }
 
 // pollOptionNames extrai os nomes das opções de uma enquete guardada (raw).

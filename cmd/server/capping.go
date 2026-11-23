@@ -175,22 +175,22 @@ func (s *Session) onMessageCapping(c *messageCapping) {
 }
 
 func cappingAlertText(name string, c *messageCapping) string {
-	head := "⚠️ *AstraCalls — limite de conversas novas do WhatsApp*\n"
+	head := "⚠️ *AstraCalls — límite de conversaciones nuevas de WhatsApp*\n"
 	when := ""
 	if c.CycleEndAt > 0 {
-		when = " até " + time.UnixMilli(c.CycleEndAt).Local().Format("02/01 15:04")
+		when = " hasta el " + time.UnixMilli(c.CycleEndAt).Local().Format("02/01 15:04")
 	}
 	quota := ""
 	if c.TotalQuota > 0 {
 		quota = fmt.Sprintf(" (%d de %d usadas)", c.UsedQuota, c.TotalQuota)
 	}
 	if c.Status == "CAPPED" {
-		return head + "A sessão *" + name + "* atingiu o limite de conversas novas" + quota + when +
-			". Mensagens para quem ainda não conversou com o número não serão entregues. " +
-			"Responder quem já falou com você continua liberado."
+		return head + "El número *" + name + "* alcanzó el límite de conversaciones nuevas" + quota + when +
+			". Los mensajes a personas que aún no han conversado con este número no se entregarán. " +
+			"Responder a quien ya te escribió sigue permitido."
 	}
-	return head + "A sessão *" + name + "* está perto do limite de conversas novas" + quota + when +
-		". Reduza os envios para contatos novos para não ser travada."
+	return head + "El número *" + name + "* está cerca del límite de conversaciones nuevas" + quota + when +
+		". Reduce los envíos a contactos nuevos para que no lo bloqueen."
 }
 
 func (s *Session) cappingSnapshot() map[string]any {

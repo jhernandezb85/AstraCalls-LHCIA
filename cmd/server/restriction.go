@@ -51,11 +51,11 @@ func (s *Session) handleReachoutTimelock(evt *events.NotifyAccountReachoutTimelo
 		s.mu.Lock()
 		s.restrictionAlerted = true
 		s.mu.Unlock()
-		text := "⚠️ *AstraCalls — número com restrição do WhatsApp*\n" +
-			"O WhatsApp aplicou uma restrição de alcance (time-lock / anti-spam) na sessão *" + s.name + "*" +
+		text := "⚠️ *AstraCalls — número con restricción de WhatsApp*\n" +
+			"WhatsApp aplicó una restricción de alcance (anti-spam) al número *" + s.name + "*" +
 			restrictionWhenText(ends) + ".\n" +
-			"Mensagens e chamadas para quem ainda NÃO te respondeu podem não chegar. " +
-			"Evite disparos em massa e peça para o contato te responder/salvar o número."
+			"Los mensajes y llamadas a quien aún NO te ha respondido pueden no llegar. " +
+			"Evita los envíos masivos y pide al contacto que te responda o guarde tu número."
 		s.chatwootAlert(text)
 	}
 }
@@ -136,5 +136,5 @@ func restrictionWhenText(ends time.Time) string {
 	if ends.IsZero() {
 		return ""
 	}
-	return " até " + ends.Local().Format("02/01 15:04")
+	return " hasta el " + ends.Local().Format("02/01 15:04")
 }

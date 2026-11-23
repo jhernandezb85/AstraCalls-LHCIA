@@ -4,6 +4,13 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.4
+
+- Textos que AstraCalls pone en Chatwoot traducidos al español: grabación de llamada, avisos
+  de desconexión/restricción/límite, anuncio (CTWA), grupos, encuestas, eventos, contactos,
+  pedidos, "ver una sola vez", editado. Título por defecto "📱 Enviado desde el celular".
+- Motivo de envío fallido en Chatwoot en español y entendible (el error técnico queda en el log).
+
 ## v1.1.6-lhcia.3
 
 - Chatwoot: el ✓✓ "entregado" ya no se pierde cuando WhatsApp lo confirma antes de que el

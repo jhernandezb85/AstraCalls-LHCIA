@@ -71,7 +71,7 @@ func TestDeliverContentEdit(t *testing.T) {
 	if j.SourceID == "ORIG123" {
 		t.Error("SourceID não pode ser igual ao original (Chatwoot deduplica e some)")
 	}
-	if !strings.Contains(j.Prefix, "Editada") {
+	if !strings.Contains(j.Prefix, "Editado") {
 		t.Errorf("faltou marcar como editada: prefix=%q", j.Prefix)
 	}
 	if j.Text != "corrigido" {

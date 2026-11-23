@@ -37,7 +37,7 @@ func eventText(ev *waE2E.EventMessage) string {
 	if st := ev.GetStartTime(); st > 0 {
 		b.WriteString("\n🕒 " + fmtEventTime(st))
 		if et := ev.GetEndTime(); et > 0 {
-			b.WriteString(" até " + fmtEventTime(et))
+			b.WriteString(" hasta " + fmtEventTime(et))
 		}
 	}
 	if loc := ev.GetLocation(); loc != nil {

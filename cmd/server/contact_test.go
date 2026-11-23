@@ -14,7 +14,7 @@ const vcard2 = "BEGIN:VCARD\nVERSION:3.0\nFN:Maria\nTEL;waid=5561977776666:+55 6
 func TestContactText(t *testing.T) {
 	cm := &waE2E.ContactMessage{DisplayName: proto.String("João Silva"), Vcard: proto.String(vcard1)}
 	got := contactText(cm)
-	if !strings.Contains(got, "👤 *Contato: João Silva*") || !strings.Contains(got, "+55 61 99999-8888") {
+	if !strings.Contains(got, "👤 *Contacto: João Silva*") || !strings.Contains(got, "+55 61 99999-8888") {
 		t.Fatalf("contactText inesperado:\n%s", got)
 	}
 	if messageType(&waE2E.Message{ContactMessage: cm}) != "contact" {
@@ -30,7 +30,7 @@ func TestContactsArrayText(t *testing.T) {
 		},
 	}
 	got := contactsArrayText(cam)
-	for _, want := range []string{"2 contatos", "João Silva — +55 61 99999-8888", "Maria — +55 61 97777-6666"} {
+	for _, want := range []string{"2 contactos", "João Silva — +55 61 99999-8888", "Maria — +55 61 97777-6666"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("array não contém %q:\n%s", want, got)
 		}

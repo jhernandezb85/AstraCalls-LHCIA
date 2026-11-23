@@ -29,7 +29,7 @@ func productText(pm *waE2E.ProductMessage) string {
 	if p := pm.GetProduct(); p != nil {
 		title := p.GetTitle()
 		if title == "" {
-			title = "Produto"
+			title = "Producto"
 		}
 		b.WriteString("🛍️ *" + title + "*")
 		if d := p.GetDescription(); d != "" {
@@ -38,7 +38,7 @@ func productText(pm *waE2E.ProductMessage) string {
 		if pr := price1000(p.GetCurrencyCode(), p.GetPriceAmount1000()); pr != "" {
 			b.WriteString("\n💰 " + pr)
 			if sp := p.GetSalePriceAmount1000(); sp > 0 {
-				b.WriteString(" (promoção: " + price1000(p.GetCurrencyCode(), sp) + ")")
+				b.WriteString(" (oferta: " + price1000(p.GetCurrencyCode(), sp) + ")")
 			}
 		}
 		if u := p.GetURL(); u != "" {
@@ -90,12 +90,12 @@ func orderText(om *waE2E.OrderMessage) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("🧾 *Pedido recebido*")
+	b.WriteString("🧾 *Pedido recibido*")
 	if t := om.GetOrderTitle(); t != "" {
 		b.WriteString("\n" + t)
 	}
 	if n := om.GetItemCount(); n > 0 {
-		b.WriteString(fmt.Sprintf("\n%d item(ns)", n))
+		b.WriteString(fmt.Sprintf("\n%d artículo(s)", n))
 	}
 	if tot := price1000(om.GetTotalCurrencyCode(), om.GetTotalAmount1000()); tot != "" {
 		b.WriteString("\nTotal: " + tot)

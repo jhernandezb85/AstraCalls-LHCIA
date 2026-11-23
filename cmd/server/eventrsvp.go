@@ -134,13 +134,13 @@ func (s *Session) decryptEventResponse(ctx context.Context, evt *events.Message)
 func eventResponseText(t waE2E.EventResponseMessage_EventResponseType) (emoji, label string) {
 	switch t {
 	case waE2E.EventResponseMessage_GOING:
-		return "✅", "vai"
+		return "✅", "va"
 	case waE2E.EventResponseMessage_NOT_GOING:
-		return "❌", "não vai"
+		return "❌", "no va"
 	case waE2E.EventResponseMessage_MAYBE:
-		return "🤔", "talvez"
+		return "🤔", "quizás"
 	}
-	return "❔", "sem resposta"
+	return "❔", "sin respuesta"
 }
 
 func parseEventResponse(s string) (waE2E.EventResponseMessage_EventResponseType, bool) {

@@ -442,9 +442,9 @@ func (s *Session) chatwootMirrorOwnGroup(cfg ChatwootConfig, evt *events.Message
 	chatID, name, avatar := s.groupJobTarget(evt.Info.Chat)
 	author := s.client.Store.PushName
 	if author == "" {
-		author = "Você"
+		author = "Tú"
 	}
-	j := s.ownMirrorJob(cfg, evt, "*"+author+" (você)*:\n")
+	j := s.ownMirrorJob(cfg, evt, "*"+author+" (tú)*:\n")
 	j.ChatID = chatID
 	j.Name = name
 	j.Avatar = avatar
@@ -527,20 +527,20 @@ func formatReferralNote(ref map[string]any) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("📢 *Contato veio de um anúncio (Click to WhatsApp)*")
+	b.WriteString("📢 *El contacto llegó por un anuncio (Click to WhatsApp)*")
 	line := func(label, key string) {
 		if v, ok := ref[key].(string); ok && v != "" {
 			b.WriteString("\n• " + label + ": " + v)
 		}
 	}
 	line("Título", "title")
-	line("Descrição", "body")
-	line("Link do anúncio", "sourceUrl")
-	line("ID do anúncio", "sourceId")
+	line("Descripción", "body")
+	line("Enlace del anuncio", "sourceUrl")
+	line("ID del anuncio", "sourceId")
 	line("Click ID (ctwa_clid)", "ctwaClid")
 	line("Ref", "ref")
-	line("Origem", "utmSource")
-	line("Meio", "utmMedium")
+	line("Origen", "utmSource")
+	line("Medio", "utmMedium")
 	return b.String()
 }
 
@@ -555,11 +555,11 @@ func deliverContent(evt *events.Message, prefix string, private bool) cwJob {
 	// editado e ligado ao original via in_reply_to (tratado mais abaixo).
 	_, editOrigID, isEdit := unwrapEdit(evt.Message)
 	if isEdit {
-		prefix = "✏️ _Editada:_\n" + prefix
+		prefix = "✏️ _Editado:_\n" + prefix
 	}
 	// visualização única: sinaliza pro atendente (a mídia baixa e sobe normal)
 	if _, viewOnce := unwrapViewOnce(evt.Message); viewOnce {
-		text = strings.TrimRight("👁️ _Visualização única_\n"+text, "\n")
+		text = strings.TrimRight("👁️ _Ver una sola vez_\n"+text, "\n")
 	}
 	// enquete: anexa o ID da mensagem (p/ referenciar no endpoint de voto)
 	if getPoll(evt.Message) != nil && evt.Info.ID != "" {
@@ -1203,13 +1203,10 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 		// sumia sem retry. Retorna erro pra o Chatwoot re-tentar o webhook e/ou
 		// marcar a mensagem como falha (visível ao atendente). Como no sucesso o
 		// source_id bloqueia reentrega, aqui (sem envio) não há risco de duplicar.
-		errMsg := "envio ao WhatsApp falhou (sessão indisponível?)"
-		if sendErr != nil {
-			_, body := sendErrorResponse(sendErr)
-			errMsg = body["error"]
-		}
+		// motivo legível para o atendente (o erro técnico fica no log)
+		errMsg := chatwootFailReason(sendErr)
 		s.log.Error("chatwoot->wa: nenhuma mensagem enviada; sinalizando falha ao Chatwoot",
-			"chat", chatID, "err", errMsg)
+			"chat", chatID, "err", sendErr)
 		// com read_receipts, a mensagem fica marcada como "falhou" (com o motivo) no
 		// Chatwoot, visível para o atendente.
 		if cfg := sess.getChatwoot(); cfg.readReceipts() {

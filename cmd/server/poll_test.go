@@ -18,10 +18,10 @@ func TestMatchVoteOptions(t *testing.T) {
 	if len(got) != 2 || got[0] != "Tarde" || got[1] != "Noite" {
 		t.Fatalf("esperava [Tarde Noite], veio %v", got)
 	}
-	if v := pollVoteText("João", got); !strings.Contains(v, "João votou: Tarde, Noite") {
+	if v := pollVoteText("João", got); !strings.Contains(v, "João votó: Tarde, Noite") {
 		t.Fatalf("pollVoteText inesperado: %s", v)
 	}
-	if v := pollVoteText("João", nil); !strings.Contains(v, "retirou o voto") {
+	if v := pollVoteText("João", nil); !strings.Contains(v, "retiró su voto") {
 		t.Fatalf("voto vazio inesperado: %s", v)
 	}
 }
@@ -37,7 +37,7 @@ func TestPollText(t *testing.T) {
 		},
 	}
 	got := pollText(pm)
-	for _, want := range []string{"Melhor horário?", "1. Manhã", "2. Tarde", "3. Noite", "escolha até 2"} {
+	for _, want := range []string{"Melhor horário?", "1. Manhã", "2. Tarde", "3. Noite", "elige hasta 2"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("pollText não contém %q. Saída:\n%s", want, got)
 		}

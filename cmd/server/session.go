@@ -785,17 +785,17 @@ func (s *Session) handleEvent(rawEvt any) {
 		go s.keepPresenceActive(ctx)
 	case *events.LoggedOut:
 		s.setAuth(AuthSnapshot{State: "logged_out", Paired: false})
-		go s.notifyDisconnected("desconectada (o aparelho desvinculou este dispositivo)",
-			"Reconecte lendo o QR no painel do AstraCalls para voltar a enviar e receber.")
+		go s.notifyDisconnected("desconectado (el celular desvinculó este dispositivo)",
+			"Vuelve a vincularlo escaneando el QR en el panel de AstraCalls para enviar y recibir de nuevo.")
 	case *events.StreamReplaced:
-		go s.notifyDisconnected("substituída por outra conexão do mesmo número",
-			"Se não foi proposital, reconecte pelo painel do AstraCalls.")
+		go s.notifyDisconnected("reemplazado por otra conexión del mismo número",
+			"Si no fue intencional, reconéctalo desde el panel de AstraCalls.")
 	case *events.TemporaryBan:
-		go s.notifyDisconnected("bloqueada temporariamente pelo WhatsApp ("+evt.String()+")",
-			"Aguarde o fim do bloqueio e evite disparos em massa.")
+		go s.notifyDisconnected("bloqueado temporalmente por WhatsApp ("+evt.String()+")",
+			"Espera a que termine el bloqueo y evita los envíos masivos.")
 	case *events.ClientOutdated:
-		go s.notifyDisconnected("recusada pelo WhatsApp: cliente desatualizado",
-			"É necessário atualizar o AstraCalls. Avise o suporte técnico.")
+		go s.notifyDisconnected("rechazado por WhatsApp: versión desactualizada",
+			"Hay que actualizar AstraCalls. Avisa a soporte técnico.")
 	case *events.NotifyAccountReachoutTimelock:
 		// Restrição/time-lock (shadow-ban 463): o WhatsApp limita o alcance do número
 		// (mensagem/chamada "somem" em silêncio). Único sinal programático da restrição.
@@ -1041,7 +1041,7 @@ func (s *Session) notifyDisconnected(reason, action string) {
 		"status": "disconnected", "reason": reason, "session": s.id, "name": s.name,
 	})
 	text := "⚠️ *AstraCalls — WhatsApp desconectado*\n" +
-		"A sessão *" + s.name + "* foi " + reason + ".\n" + action
+		"El número *" + s.name + "* fue " + reason + ".\n" + action
 	s.chatwootAlert(text)
 }
 

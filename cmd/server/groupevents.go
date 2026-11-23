@@ -42,16 +42,16 @@ func (s *Session) handleGroupSystemEvent(evt *events.GroupInfo) {
 func (s *Session) groupSystemLines(evt *events.GroupInfo) []string {
 	var lines []string
 	for _, j := range evt.Join {
-		lines = append(lines, "➕ "+s.participantLabel(j)+" entrou no grupo")
+		lines = append(lines, "➕ "+s.participantLabel(j)+" se unió al grupo")
 	}
 	for _, j := range evt.Leave {
-		lines = append(lines, "➖ "+s.participantLabel(j)+" saiu do grupo")
+		lines = append(lines, "➖ "+s.participantLabel(j)+" salió del grupo")
 	}
 	for _, j := range evt.Promote {
-		lines = append(lines, "⭐ "+s.participantLabel(j)+" agora é administrador")
+		lines = append(lines, "⭐ "+s.participantLabel(j)+" ahora es administrador")
 	}
 	for _, j := range evt.Demote {
-		lines = append(lines, "⬇️ "+s.participantLabel(j)+" deixou de ser administrador")
+		lines = append(lines, "⬇️ "+s.participantLabel(j)+" dejó de ser administrador")
 	}
 	return lines
 }
