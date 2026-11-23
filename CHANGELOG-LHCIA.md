@@ -4,6 +4,16 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.7
+
+- Chatwoot: mensajes eliminados ("eliminar para todos").
+  - El cliente elimina en WhatsApp: según `contact_delete`, `note` (por defecto) conserva el
+    mensaje y agrega una nota privada citándolo; `delete` lo elimina también en Chatwoot.
+  - Tú eliminas en el celular: se elimina también en Chatwoot.
+  - Eliminas un mensaje enviado en Chatwoot: se elimina para todos en WhatsApp. Pasados
+    ~2 días y medio (límite de WhatsApp) o si falla, queda una nota avisando.
+- Los mensajes recibidos también se guardan en `chatwoot_msg_refs` (para poder eliminarlos).
+
 ## v1.1.6-lhcia.6
 
 - Chatwoot: en el aviso de anuncio (CTWA), la descripción se muestra como texto normal; las
