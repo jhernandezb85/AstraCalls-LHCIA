@@ -1112,7 +1112,11 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 
 	content := asStr(body["content"])
 	attachments := asList(body["attachments"])
-	ctx := r.Context()
+	// O Chatwoot fecha a conexão do webhook após ~5s; num grupo grande o envio
+	// (chaves de cada aparelho) leva mais que isso. Com r.Context() o envio era
+	// abortado no meio ("context canceled") e a mensagem não saía. Segue até o fim.
+	ctx, cancelSend := context.WithTimeout(context.WithoutCancel(r.Context()), cwSendTimeout)
+	defer cancelSend()
 
 	// assinatura do atendente: prefixa *Nome*\n no texto e na legenda de mídia.
 	// O nome vem do sender do webhook (o agente). Ignora quando não há nome

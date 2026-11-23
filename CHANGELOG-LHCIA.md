@@ -4,6 +4,13 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.8
+
+- Chatwoot: los envíos lentos (grupos grandes) ya no se cortan a los 5 segundos. Antes, cuando
+  Chatwoot dejaba de esperar, AstraCalls abortaba el envío a medias ("context canceled") y el
+  mensaje no salía. Ahora termina el envío y la marca vuelve a "enviado".
+- Eliminar en WhatsApp desde Chatwoot: un reintento si WhatsApp no responde a tiempo.
+
 ## v1.1.6-lhcia.7
 
 - Chatwoot: mensajes eliminados ("eliminar para todos").

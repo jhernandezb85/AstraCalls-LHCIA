@@ -41,6 +41,8 @@ const (
 	cwRetryWindow = 48 * time.Hour
 	// o Chatwoot espera o webhook por ~5s; acima disso ele marca "falhou"
 	cwWebhookSlow = 4 * time.Second
+	// tempo máximo de um envio Chatwoot -> WhatsApp (grupos grandes demoram)
+	cwSendTimeout = 3 * time.Minute
 )
 
 func validDeviceMode(m string) bool {

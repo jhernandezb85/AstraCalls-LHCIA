@@ -194,9 +194,16 @@ func (s *Session) chatwootRevoke(body map[string]any) {
 		s.revokeFailedNote(cfg, convID, waID, "")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cwSendTimeout)
 	defer cancel()
-	if _, err := s.sendResolvingLID(ctx, jid, s.client.BuildRevoke(jid, types.EmptyJID, waID)); err != nil {
+	revoke := s.client.BuildRevoke(jid, types.EmptyJID, waID)
+	_, err = s.sendResolvingLID(ctx, jid, revoke)
+	if err != nil && ctx.Err() == nil && !errors.Is(err, whatsmeow.ErrNotLoggedIn) && !errors.Is(err, whatsmeow.ErrNotConnected) {
+		// falha passageira (ex.: consulta de aparelhos sem resposta): tenta mais uma vez
+		time.Sleep(3 * time.Second)
+		_, err = s.sendResolvingLID(ctx, jid, revoke)
+	}
+	if err != nil {
 		if s.log != nil {
 			s.log.Warn("chatwoot->wa: apagar no WhatsApp falhou", "err", err, "wa_msg", waID)
 		}
