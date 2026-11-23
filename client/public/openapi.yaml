@@ -312,6 +312,7 @@ components:
         device_mode: { type: string, enum: [open, keep, note] }
         device_title: { type: string }
         read_receipts: { type: boolean }
+        contact_delete: { type: string, enum: [note, delete] }
     CallRecord:
       type: object
       properties:
@@ -1666,6 +1667,7 @@ paths:
                 device_title: { type: string, default: "📲 Enviado pelo aparelho", description: "Título colado acima de cada mensagem do aparelho" }
                 device_bot_token: { type: string, description: "Token de acesso de um Agent Bot da conta usado para postar as mensagens do aparelho (aparecem com o nome do bot e não contam como resposta humana). Vazio na edição = mantém o atual. Nunca é devolvido; a resposta traz device_bot=true quando configurado" }
                 read_receipts: { type: boolean, default: true, description: "Reflete os recibos do WhatsApp no Chatwoot: entregue/lida viram o status da mensagem (✓✓) e lida atualiza o last_seen do contato; falha de envio marca a mensagem como falhou com o motivo. O 'Reenviar' do Chatwoot reenvia de verdade pelo WhatsApp" }
+                contact_delete: { type: string, enum: [note, delete], default: note, description: "Quando o CONTATO apaga uma mensagem para todos: note mantém a mensagem e posta uma nota privada; delete apaga também no Chatwoot. O que a conta apaga no celular some do Chatwoot, e uma mensagem de saída apagada no Chatwoot é apagada para todos no WhatsApp (até ~2 dias e meio após o envio)" }
       responses:
         "200":
           description: Conectado (account_token omitido na resposta)

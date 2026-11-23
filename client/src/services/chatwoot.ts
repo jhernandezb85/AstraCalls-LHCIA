@@ -20,6 +20,7 @@ export type ChatwootConfig = {
   device_bot_token?: string;
   /** Recibos entregue/lida no Chatwoot (padrão: ligado). */
   read_receipts?: boolean;
+  contact_delete?: 'note' | 'delete';
 };
 
 export const getChatwoot = (sid: string) =>

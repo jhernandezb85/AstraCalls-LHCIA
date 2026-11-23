@@ -108,13 +108,17 @@ func isAuthHTTPErr(err error) bool {
 	return strings.Contains(m, "http 401") || strings.Contains(m, "http 403") || strings.Contains(m, "http 404")
 }
 
-// afterJobPosted: acompanha os recibos das mensagens de saída e, em device_mode
-// open, passa a conversa para "aberta".
+// afterJobPosted: guarda a relação WhatsApp ↔ Chatwoot (recibos das mensagens de
+// saída; apagar recebidas — ver chatwoot_delete.go) e, em device_mode open, passa
+// a conversa para "aberta". Notas privadas não entram (não têm tiques).
 func (s *Session) afterJobPosted(cfg ChatwootConfig, j cwJob, convID, cwID int) {
-	if !j.Outgoing {
+	if j.Private {
 		return
 	}
 	s.rememberCWMessage(j.SourceID, convID, cwID)
+	if !j.Outgoing {
+		return
+	}
 	if j.OpenConv {
 		// abre com o bot (o aviso na timeline diz "reaberta por <bot>", não pelo
 		// dono do token da conta); se o bot for recusado, usa o token da conta

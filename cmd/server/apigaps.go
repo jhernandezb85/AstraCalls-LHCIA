@@ -410,6 +410,7 @@ func (s *Session) handleIncomingRevoke(evt *events.Message) {
 	if origID == "" {
 		return
 	}
+	go s.chatwootOnRevoke(evt)
 	s.dispatchWebhook("deleted", map[string]any{
 		"id":          origID,
 		"chat":        evt.Info.Chat.String(),

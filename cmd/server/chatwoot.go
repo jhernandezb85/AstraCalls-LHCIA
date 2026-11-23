@@ -98,6 +98,10 @@ type ChatwootConfig struct {
 	// last_seen do contato na conversa (mesma técnica da Evolution API). Ligado por
 	// padrão (nil = ligado), inclusive em configs antigas sem o campo.
 	ReadReceipts *bool `json:"read_receipts,omitempty"`
+	// ContactDelete: o que fazer no Chatwoot quando o CONTATO apaga uma mensagem
+	// para todos (ver chatwoot_delete.go). "note" (padrão): mantém a mensagem e
+	// posta uma nota privada; "delete": apaga também no Chatwoot.
+	ContactDelete string `json:"contact_delete,omitempty"`
 }
 
 // readReceipts diz se os recibos estão ligados (padrão: sim).
@@ -1068,6 +1072,12 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 		return
 	}
+	// mensagem de saída apagada no Chatwoot -> apaga para todos no WhatsApp
+	if isDeleteCandidate(body) {
+		go sess.chatwootRevoke(body)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	// só reenvia ao WhatsApp o que o agente realmente escreveu de novo no Chatwoot —
 	// ou uma mensagem que falhou e o atendente mandou "Reenviar" (ver isRetryCandidate)
 	if isRetryCandidate(body) {
@@ -1591,6 +1601,10 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "device_mode deve ser open, keep ou note"})
 		return
 	}
+	if !validContactDelete(cfg.ContactDelete) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "contact_delete deve ser note ou delete"})
+		return
+	}
 	if !cfg.valid() {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "url, account_id, account_token e inbox_id são obrigatórios"})
 		return
@@ -1616,6 +1630,7 @@ func publicChatwootCfg(cfg ChatwootConfig) ChatwootConfig {
 	cfg.AccountToken = ""
 	cfg.DeviceBotToken = ""
 	cfg.DeviceMode = cfg.deviceMode()
+	cfg.ContactDelete = cfg.contactDelete()
 	rr := cfg.readReceipts()
 	cfg.ReadReceipts = &rr
 	return cfg
