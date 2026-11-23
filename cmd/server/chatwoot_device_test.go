@@ -273,6 +273,31 @@ func TestClaimChatwootRetry(t *testing.T) {
 	}
 }
 
+func TestReceiptBeforePostIsAppliedLater(t *testing.T) {
+	// o contato online confirma "entregue" antes de a mensagem do celular terminar
+	// de ser postada no Chatwoot: o recibo não pode se perder
+	f, srv := newFakeCWState(t)
+	s := &Session{id: "early"}
+	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "user", InboxID: 7})
+	contact := types.NewJID("5215512345678", types.DefaultUserServer)
+	src := types.MessageSource{Chat: contact, Sender: contact}
+	s.chatwootOnReceipt(&events.Receipt{MessageSource: src, MessageIDs: []types.MessageID{"EARLY1"}, Type: types.ReceiptTypeDelivered})
+	if f.has("PATCH ") {
+		t.Fatal("sem a mensagem no Chatwoot ainda não há o que atualizar")
+	}
+	s.rememberCWMessage("EARLY1", 302, 800)
+	waitFor(t, func() bool { return f.has("PATCH /api/v1/accounts/1/conversations/302/messages/800") })
+	if _, ok := s.takeHeldReceipt("EARLY1"); ok {
+		t.Fatal("o recibo guardado deve ser consumido")
+	}
+	// "lida" vence "entregue" se ambos chegarem antes
+	s.holdReceipt("EARLY2", "read")
+	s.holdReceipt("EARLY2", "delivered")
+	if st, _ := s.takeHeldReceipt("EARLY2"); st != "read" {
+		t.Fatalf("status guardado = %q, want read", st)
+	}
+}
+
 func TestRelayIsExclusivePerMessage(t *testing.T) {
 	s := &Session{id: "lock"}
 	if !s.beginRelay(5) {

@@ -70,8 +70,12 @@ func (s *Session) rememberCWMessage(waID string, convID, msgID int) {
 			s.log.Warn("chatwoot: gravar referência da mensagem falhou", "err", err)
 		}
 	}
+	if st, ok := s.takeHeldReceipt(waID); ok {
+		go s.getChatwoot().setMessageStatus(convID, msgID, st, "")
+	}
 	if cwMsgRefInsert.Add(1)%cwMsgRefPruneEach == 0 {
 		pruneCWMsgRefs(now)
+		pruneHeldReceipts(now)
 		if st := s.store(); st != nil {
 			_ = st.pruneCWRefs(s.mgr.appCtx, now.Add(-cwMsgRefTTL).UnixMilli())
 		}
@@ -79,6 +83,57 @@ func (s *Session) rememberCWMessage(waID string, convID, msgID int) {
 }
 
 func (s *Session) cwIDKey(msgID int) string { return fmt.Sprintf("%s|#%d", s.id, msgID) }
+
+// Recibos que chegaram antes de a mensagem existir no Chatwoot.
+const cwHeldReceiptTTL = 5 * time.Minute
+
+type heldReceipt struct {
+	status string
+	at     time.Time
+}
+
+var cwHeldReceipts sync.Map // "<sessão>|<waMsgID>" -> heldReceipt
+
+func receiptRank(st string) int {
+	switch st {
+	case "delivered":
+		return 1
+	case "read":
+		return 2
+	}
+	return 0
+}
+
+// holdReceipt guarda o status mais avançado recebido para a mensagem.
+func (s *Session) holdReceipt(waID, status string) {
+	key := s.id + "|" + waID
+	if v, ok := cwHeldReceipts.Load(key); ok && receiptRank(v.(heldReceipt).status) >= receiptRank(status) {
+		return
+	}
+	cwHeldReceipts.Store(key, heldReceipt{status: status, at: time.Now()})
+	if cwHeldInsert.Add(1)%200 == 0 {
+		pruneHeldReceipts(time.Now())
+	}
+}
+
+var cwHeldInsert atomic.Int64
+
+func (s *Session) takeHeldReceipt(waID string) (string, bool) {
+	v, ok := cwHeldReceipts.LoadAndDelete(s.id + "|" + waID)
+	if !ok || time.Since(v.(heldReceipt).at) > cwHeldReceiptTTL {
+		return "", false
+	}
+	return v.(heldReceipt).status, true
+}
+
+func pruneHeldReceipts(now time.Time) {
+	cwHeldReceipts.Range(func(k, v any) bool {
+		if now.Sub(v.(heldReceipt).at) > cwHeldReceiptTTL {
+			cwHeldReceipts.Delete(k)
+		}
+		return true
+	})
+}
 
 // store devolve o banco principal, ou nil (testes / sessão sem gerenciador).
 func (s *Session) store() *sessionStore {
@@ -161,6 +216,10 @@ func (s *Session) chatwootOnReceipt(evt *events.Receipt) {
 	for _, id := range evt.MessageIDs {
 		if ref, ok := s.lookupCWMessage(id); ok {
 			cfg.setMessageStatus(ref.conv, ref.msg, status, "")
+		} else {
+			// o recibo chegou ANTES de a mensagem existir no Chatwoot (o contato
+			// online confirma em <1s; postar leva mais): guarda e aplica ao registrar
+			s.holdReceipt(id, status)
 		}
 	}
 	if status == "read" {
