@@ -4,6 +4,11 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.5
+
+- CI: cada versión publicada también se etiqueta `latest` (producción usa `:latest`; las
+  versiones `vX.Y.Z-lhcia.N` quedan como histórico para volver atrás). Mismo código que `.4`.
+
 ## v1.1.6-lhcia.4
 
 - Textos que AstraCalls pone en Chatwoot traducidos al español: grabación de llamada, avisos

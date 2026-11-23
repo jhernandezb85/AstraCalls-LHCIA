@@ -6,7 +6,8 @@ name: Imagen LHCIA (GHCR, amd64)
 # versión `vX.Y.Z-lhcia.N` o a mano.
 #
 #   ghcr.io/<dueño>/astracalls:lhcia              -> última versión de la rama (pruebas)
-#   ghcr.io/<dueño>/astracalls:v1.1.6-lhcia.1     -> versión fija (producción)
+#   ghcr.io/<dueño>/astracalls:latest             -> última versión publicada (producción)
+#   ghcr.io/<dueño>/astracalls:v1.1.6-lhcia.1     -> versión fija (histórico / volver atrás)
 #   ghcr.io/<dueño>/astracalls:lhcia-<sha7>       -> versión fija por commit
 #
 # Versiones: vX.Y.Z = versión oficial de AstraCalls en la que se basa; -lhcia.N =
@@ -67,6 +68,7 @@ jobs:
           tags: |
             type=raw,value=lhcia,enable=${{ github.ref == 'refs/heads/lhcia' }}
             type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
             type=sha,prefix=lhcia-,format=short
 
       - uses: docker/build-push-action@v6
