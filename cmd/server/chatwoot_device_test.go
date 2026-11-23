@@ -142,6 +142,7 @@ type fakeCWState struct {
 	calls    []string
 	tokens   []string
 	messages map[int]map[string]any // id -> {status, source_id}
+	denyBot  bool                   // responde 401 ao token "bot"
 }
 
 func newFakeCWState(t *testing.T) (*fakeCWState, *httptest.Server) {
@@ -150,8 +151,13 @@ func newFakeCWState(t *testing.T) (*fakeCWState, *httptest.Server) {
 		f.mu.Lock()
 		f.calls = append(f.calls, r.Method+" "+r.URL.Path+"?"+r.URL.RawQuery)
 		f.tokens = append(f.tokens, r.Header.Get("api_access_token"))
+		deny := f.denyBot && r.Header.Get("api_access_token") == "bot"
 		f.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
+		if deny {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/conversations/302/messages") {
 			f.mu.Lock()
 			var list []any
@@ -192,9 +198,18 @@ func TestAfterJobPostedOpensConversationOnlyInOpenMode(t *testing.T) {
 	if !f.has("POST /api/v1/accounts/1/conversations/302/toggle_status") {
 		t.Fatalf("open passa a conversa para aberta; chamadas: %v", f.calls)
 	}
-	// o status é mudado com o token da conta (o bot não deve "assumir" a conversa)
-	if f.tokens[len(f.tokens)-1] != "user" {
-		t.Fatal("toggle_status deve usar o token da conta")
+	// o status é mudado pelo bot (o aviso diz "reaberta por WhatsApp (celular)")
+	if f.tokens[len(f.tokens)-1] != "bot" {
+		t.Fatalf("toggle_status deve usar o bot; tokens: %v", f.tokens)
+	}
+	// bot recusado -> cai para o token da conta
+	f.mu.Lock()
+	f.tokens = nil
+	f.denyBot = true
+	f.mu.Unlock()
+	s.afterJobPosted(cfg, cwJob{Outgoing: true, Device: true, OpenConv: true, SourceID: "O2"}, 302, 702)
+	if strings.Join(f.tokens, ",") != "bot,user" {
+		t.Fatalf("sem acesso do bot deve usar a conta; tokens: %v", f.tokens)
 	}
 	if !s.knownCWMessage(700) || !s.knownCWMessage(701) {
 		t.Fatal("mensagens postadas ficam registradas (recibos e proteção do Reenviar)")

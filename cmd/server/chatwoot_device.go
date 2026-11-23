@@ -114,16 +114,27 @@ func (s *Session) afterJobPosted(cfg ChatwootConfig, j cwJob, convID, cwID int) 
 	}
 	s.rememberCWMessage(j.SourceID, convID, cwID)
 	if j.OpenConv {
+		// abre com o bot (o aviso na timeline diz "reaberta por <bot>", não pelo
+		// dono do token da conta); se o bot for recusado, usa o token da conta
+		if cfg.DeviceBotToken != "" {
+			bc := cfg
+			bc.AccountToken = cfg.DeviceBotToken
+			if code := bc.openConversation(convID); code > 0 && code < 300 {
+				return
+			}
+		}
 		cfg.openConversation(convID)
 	}
 }
 
-// openConversation passa a conversa para "aberta" (no-op se já estiver).
-func (c ChatwootConfig) openConversation(convID int) {
+// openConversation passa a conversa para "aberta" (no-op se já estiver) e
+// devolve o status HTTP (0 em erro de rede).
+func (c ChatwootConfig) openConversation(convID int) int {
 	if convID == 0 {
-		return
+		return 0
 	}
-	_, _, _ = c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/toggle_status", convID), map[string]any{"status": "open"})
+	_, code, _ := c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/toggle_status", convID), map[string]any{"status": "open"})
+	return code
 }
 
 // ---------- Reenviar ----------
