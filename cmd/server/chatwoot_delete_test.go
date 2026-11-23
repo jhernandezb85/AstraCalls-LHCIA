@@ -56,8 +56,6 @@ func TestIsDeleteCandidate(t *testing.T) {
 		"não apagada": func(b map[string]any) { b["content_attributes"] = map[string]any{} },
 		"entrada":     func(b map[string]any) { b["message_type"] = "incoming" },
 		"nota":        func(b map[string]any) { b["private"] = true },
-		"sem envio":   func(b map[string]any) { b["source_id"] = "" },
-		"derivada":    func(b map[string]any) { b["source_id"] = "WA1:edit:123" },
 		"criação":     func(b map[string]any) { b["event"] = "message_created" },
 	} {
 		b := deleteBody("WA40")
@@ -68,6 +66,25 @@ func TestIsDeleteCandidate(t *testing.T) {
 	}
 	if isRetryCandidate(deleteBody("")) {
 		t.Fatal("apagada nunca é Reenviar")
+	}
+}
+
+func TestRevokeTarget(t *testing.T) {
+	s := &Session{id: "target"}
+	if got := s.revokeTarget(deleteBody("WA40")); got != "WA40" {
+		t.Fatalf("usa o source_id: %q", got)
+	}
+	// sem source_id no Chatwoot (endpoint ausente): usa a relação guardada no envio
+	s.rememberCWMessage("WA41", 302, 40)
+	if got := s.revokeTarget(deleteBody("")); got != "WA41" {
+		t.Fatalf("sem source_id deve usar a relação guardada: %q", got)
+	}
+	if got := s.revokeTarget(deleteBody("WA1:edit:123")); got != "WA41" {
+		t.Fatalf("source_id derivado não é apagável; cai na relação: %q", got)
+	}
+	other := &Session{id: "target2"}
+	if got := other.revokeTarget(deleteBody("")); got != "" {
+		t.Fatalf("mensagem que nunca saiu: nada a apagar, veio %q", got)
 	}
 }
 

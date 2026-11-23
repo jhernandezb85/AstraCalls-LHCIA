@@ -278,6 +278,15 @@ func (s *sessionStore) loadCWRef(ctx context.Context, sessionID, waID string) (c
 	return convID, msgID, at, err == nil
 }
 
+// loadWAByCW devolve o ID da mensagem do WhatsApp ligada à mensagem do Chatwoot.
+func (s *sessionStore) loadWAByCW(ctx context.Context, sessionID string, msgID int) (string, bool) {
+	var wa string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT wa_id FROM chatwoot_msg_refs WHERE session_id = $1 AND cw_msg_id = $2 ORDER BY created_at DESC LIMIT 1`,
+		sessionID, msgID).Scan(&wa)
+	return wa, err == nil && wa != ""
+}
+
 func (s *sessionStore) hasCWMsg(ctx context.Context, sessionID string, msgID int) bool {
 	var one int
 	err := s.db.QueryRowContext(ctx,

@@ -4,6 +4,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.9
+
+- Eliminar en WhatsApp desde Chatwoot: si el mensaje no tiene guardado el ID de WhatsApp en
+  Chatwoot (la función que lo guarda no existe en todo Chatwoot), se usa la relación guardada
+  por AstraCalls en Postgres. El log dice qué mensaje se elimina.
+
 ## v1.1.6-lhcia.8
 
 - Chatwoot: los envíos lentos (grupos grandes) ya no se cortan a los 5 segundos. Antes, cuando

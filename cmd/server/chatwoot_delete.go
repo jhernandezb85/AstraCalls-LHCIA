@@ -139,8 +139,8 @@ func (s *Session) deleteCWMessage(cfg ChatwootConfig, ref cwMsgRef) bool {
 
 // ---------- Chatwoot -> WhatsApp ----------
 
-// isDeleteCandidate: o Chatwoot apagou uma mensagem de SAÍDA que existe no
-// WhatsApp (tem source_id).
+// isDeleteCandidate: o Chatwoot apagou uma mensagem de SAÍDA (não nota). Qual
+// mensagem do WhatsApp apagar é resolvido em revokeTarget.
 func isDeleteCandidate(body map[string]any) bool {
 	if asStr(body["event"]) != "message_updated" || asStr(body["message_type"]) != "outgoing" {
 		return false
@@ -149,10 +149,18 @@ func isDeleteCandidate(body map[string]any) bool {
 		return false
 	}
 	ca := asMap(body["content_attributes"])
-	if v, _ := ca["deleted"].(bool); !v {
-		return false
+	v, _ := ca["deleted"].(bool)
+	return v
+}
+
+// revokeTarget devolve o ID do WhatsApp da mensagem apagada no Chatwoot: o
+// source_id gravado nela ou, se faltar (o endpoint que o grava não existe em todo
+// Chatwoot), a relação guardada por nós ao enviar. "" = nunca saiu pelo WhatsApp.
+func (s *Session) revokeTarget(body map[string]any) string {
+	if wa := revokableSourceID(asStr(body["source_id"])); wa != "" {
+		return wa
 	}
-	return revokableSourceID(asStr(body["source_id"])) != ""
+	return s.waIDForCW(asInt(body["id"]))
 }
 
 // revokableSourceID devolve o ID da mensagem do WhatsApp, ou "" para source_ids
@@ -180,7 +188,16 @@ func (s *Session) chatwootRevoke(body map[string]any) {
 	if !cfg.valid() {
 		return
 	}
-	waID := revokableSourceID(asStr(body["source_id"]))
+	waID := s.revokeTarget(body)
+	if waID == "" {
+		if s.log != nil {
+			s.log.Info("chatwoot->wa: mensagem apagada no Chatwoot não saiu pelo WhatsApp; nada a apagar", "cw_msg", cwID)
+		}
+		return
+	}
+	if s.log != nil {
+		s.log.Info("chatwoot->wa: apagando no WhatsApp", "cw_msg", cwID, "wa_msg", waID)
+	}
 	convID := asInt(asMap(body["conversation"])["id"])
 	if created, err := time.Parse(time.RFC3339Nano, asStr(body["created_at"])); err == nil && time.Since(created) > waRevokeWindow {
 		s.revokeFailedNote(cfg, convID, waID, "WhatsApp solo permite eliminar para todos durante unos 2 días.")

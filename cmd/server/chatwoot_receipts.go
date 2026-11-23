@@ -41,6 +41,7 @@ const (
 type cwMsgRef struct {
 	conv, msg int
 	at        time.Time
+	wa        string // ID da mensagem do WhatsApp
 }
 
 var (
@@ -62,7 +63,7 @@ func (s *Session) rememberCWMessage(waID string, convID, msgID int) {
 		return
 	}
 	now := time.Now()
-	ref := cwMsgRef{conv: convID, msg: msgID, at: now}
+	ref := cwMsgRef{conv: convID, msg: msgID, at: now, wa: waID}
 	cwMsgRefs.Store(s.id+"|"+waID, ref)
 	cwMsgRefs.Store(s.cwIDKey(msgID), ref)
 	if st := s.store(); st != nil {
@@ -154,7 +155,7 @@ func (s *Session) lookupCWMessage(waID string) (cwMsgRef, bool) {
 	}
 	if st := s.store(); st != nil {
 		if conv, msg, at, ok := st.loadCWRef(s.mgr.appCtx, s.id, waID); ok {
-			ref := cwMsgRef{conv: conv, msg: msg, at: time.UnixMilli(at)}
+			ref := cwMsgRef{conv: conv, msg: msg, at: time.UnixMilli(at), wa: waID}
 			if time.Since(ref.at) <= cwMsgRefTTL {
 				cwMsgRefs.Store(s.id+"|"+waID, ref)
 				return ref, true
@@ -162,6 +163,23 @@ func (s *Session) lookupCWMessage(waID string) (cwMsgRef, bool) {
 		}
 	}
 	return cwMsgRef{}, false
+}
+
+// waIDForCW devolve o ID do WhatsApp de uma mensagem do Chatwoot que saiu por nós
+// (independe do source_id gravado no Chatwoot).
+func (s *Session) waIDForCW(msgID int) string {
+	if msgID == 0 {
+		return ""
+	}
+	if v, ok := cwMsgRefs.Load(s.cwIDKey(msgID)); ok && v.(cwMsgRef).wa != "" {
+		return v.(cwMsgRef).wa
+	}
+	if st := s.store(); st != nil {
+		if wa, ok := st.loadWAByCW(s.mgr.appCtx, s.id, msgID); ok {
+			return wa
+		}
+	}
+	return ""
 }
 
 // knownCWMessage diz se a mensagem do Chatwoot já saiu pelo WhatsApp por nós.
