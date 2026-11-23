@@ -18,7 +18,7 @@ import (
 //
 // Duas camadas, que se complementam:
 //  1. status por mensagem: cada mensagem de SAÍDA que o AstraCalls conhece (enviada
-//     pelo agente no Chatwoot, ou espelhada do aparelho com mirror_as_outgoing) fica
+//     pelo agente no Chatwoot, ou espelhada do aparelho como saída — device_mode) fica
 //     num mapa waMsgID -> (conversa, mensagem) do Chatwoot. Ao chegar o recibo
 //     "entregue"/"lida", o status dela é atualizado (PATCH .../messages/{id}, só
 //     inboxes API) — são os tiques ✓✓ na timeline.
@@ -26,9 +26,10 @@ import (
 //     contato via API pública (update_last_seen). É o que a Evolution API faz, e
 //     cobre também mensagens que não estão no mapa (ex.: após reiniciar).
 //
-// O mapa é em memória com validade de cwMsgRefTTL: os recibos chegam em segundos
-// ou horas; perder o mapa num restart só perde o tique "entregue" das mensagens
-// antigas (o "lida" segue funcionando pelo last_seen).
+// O mapa fica em memória (cache) e no banco principal (tabela chatwoot_msg_refs),
+// com validade de cwMsgRefTTL: sobrevive a restart, então o "entregue" de mensagens
+// enviadas antes de reiniciar continua chegando. Ele também diz quais mensagens do
+// Chatwoot já saíram pelo WhatsApp (o "Reenviar" não as duplica).
 
 const (
 	cwMsgRefTTL       = 7 * 24 * time.Hour
@@ -60,23 +61,66 @@ func (s *Session) rememberCWMessage(waID string, convID, msgID int) {
 	if waID == "" || convID == 0 || msgID == 0 {
 		return
 	}
-	cwMsgRefs.Store(s.id+"|"+waID, cwMsgRef{conv: convID, msg: msgID, at: time.Now()})
+	now := time.Now()
+	ref := cwMsgRef{conv: convID, msg: msgID, at: now}
+	cwMsgRefs.Store(s.id+"|"+waID, ref)
+	cwMsgRefs.Store(s.cwIDKey(msgID), ref)
+	if st := s.store(); st != nil {
+		if err := st.saveCWRef(s.mgr.appCtx, s.id, waID, convID, msgID, now.UnixMilli()); err != nil && s.log != nil {
+			s.log.Warn("chatwoot: gravar referência da mensagem falhou", "err", err)
+		}
+	}
 	if cwMsgRefInsert.Add(1)%cwMsgRefPruneEach == 0 {
-		pruneCWMsgRefs(time.Now())
+		pruneCWMsgRefs(now)
+		if st := s.store(); st != nil {
+			_ = st.pruneCWRefs(s.mgr.appCtx, now.Add(-cwMsgRefTTL).UnixMilli())
+		}
 	}
 }
 
-func (s *Session) lookupCWMessage(waID string) (cwMsgRef, bool) {
-	v, ok := cwMsgRefs.Load(s.id + "|" + waID)
-	if !ok {
-		return cwMsgRef{}, false
+func (s *Session) cwIDKey(msgID int) string { return fmt.Sprintf("%s|#%d", s.id, msgID) }
+
+// store devolve o banco principal, ou nil (testes / sessão sem gerenciador).
+func (s *Session) store() *sessionStore {
+	if s.mgr == nil || s.mgr.store == nil || s.mgr.store.db == nil {
+		return nil
 	}
-	ref := v.(cwMsgRef)
-	if time.Since(ref.at) > cwMsgRefTTL {
+	return s.mgr.store
+}
+
+func (s *Session) lookupCWMessage(waID string) (cwMsgRef, bool) {
+	if v, ok := cwMsgRefs.Load(s.id + "|" + waID); ok {
+		ref := v.(cwMsgRef)
+		if time.Since(ref.at) <= cwMsgRefTTL {
+			return ref, true
+		}
 		cwMsgRefs.Delete(s.id + "|" + waID)
 		return cwMsgRef{}, false
 	}
-	return ref, true
+	if st := s.store(); st != nil {
+		if conv, msg, at, ok := st.loadCWRef(s.mgr.appCtx, s.id, waID); ok {
+			ref := cwMsgRef{conv: conv, msg: msg, at: time.UnixMilli(at)}
+			if time.Since(ref.at) <= cwMsgRefTTL {
+				cwMsgRefs.Store(s.id+"|"+waID, ref)
+				return ref, true
+			}
+		}
+	}
+	return cwMsgRef{}, false
+}
+
+// knownCWMessage diz se a mensagem do Chatwoot já saiu pelo WhatsApp por nós.
+func (s *Session) knownCWMessage(msgID int) bool {
+	if msgID == 0 {
+		return false
+	}
+	if _, ok := cwMsgRefs.Load(s.cwIDKey(msgID)); ok {
+		return true
+	}
+	if st := s.store(); st != nil {
+		return st.hasCWMsg(s.mgr.appCtx, s.id, msgID)
+	}
+	return false
 }
 
 func pruneCWMsgRefs(now time.Time) {
@@ -104,7 +148,7 @@ func receiptStatus(t types.ReceiptType) string {
 // só conversas 1:1 — em grupo cada participante manda o seu e não há um "lido").
 func (s *Session) chatwootOnReceipt(evt *events.Receipt) {
 	cfg := s.getChatwoot()
-	if !cfg.valid() || !cfg.ReadReceipts || evt.IsFromMe || evt.IsGroup {
+	if !cfg.valid() || !cfg.readReceipts() || evt.IsFromMe || evt.IsGroup {
 		return
 	}
 	if evt.Chat.Server != types.DefaultUserServer && evt.Chat.Server != types.HiddenUserServer {

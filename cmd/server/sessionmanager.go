@@ -322,6 +322,7 @@ func (m *SessionManager) Delete(ctx context.Context, id string) error {
 	_ = m.store.delete(ctx, id)
 	// a fila de reentrega vive no banco principal; limpa as pendências órfãs.
 	_ = m.store.deleteOutboxForSession(ctx, id)
+	_ = m.store.deleteCWRefsForSession(ctx, id)
 	m.broker.emitSessionList(m.infos())
 	m.log.Info("session deleted", "session", id)
 	return nil
