@@ -79,19 +79,29 @@ type ChatwootConfig struct {
 	// ImportHistoryDays limita a janela (0 = importHistoryDefaultDays).
 	ImportHistory     bool `json:"import_history"`
 	ImportHistoryDays int  `json:"import_history_days"`
-	// MirrorAsOutgoing: o que a conta enviou PELO APARELHO entra como mensagem de
-	// SAÍDA normal (bolha do atendente) em vez de nota privada com o título "Enviado
-	// pelo aparelho". Não há risco de reenvio: a mensagem leva o source_id do
-	// WhatsApp e o webhook ignora esses ecos. O que sai pela API (mirror_api, ex.:
-	// n8n/bots) continua como nota privada: no Chatwoot uma mensagem de saída de um
-	// usuário conta como resposta humana e ABRE conversas pendentes (ex.: Captain),
-	// o que quebraria fluxos automatizados.
-	MirrorAsOutgoing bool `json:"mirror_as_outgoing"`
+	// DeviceMode: como entra no Chatwoot o que a conta enviou PELO APARELHO (ver
+	// chatwoot_device.go). "open" (padrão): mensagem de SAÍDA normal e a conversa
+	// passa a "aberta" — uma pessoa assumiu, bots/Captain param de responder.
+	// "keep": mensagem de SAÍDA normal sem mudar o status da conversa (exige
+	// DeviceBotToken; com token de usuário o Chatwoot abre conversas pendentes do
+	// Captain). "note": nota privada (comportamento antigo). Sem risco de reenvio:
+	// a mensagem leva o source_id do WhatsApp e o webhook ignora esses ecos.
+	DeviceMode string `json:"device_mode,omitempty"`
+	// DeviceTitle: título colado acima de cada mensagem do aparelho ("" = padrão).
+	DeviceTitle string `json:"device_title,omitempty"`
+	// DeviceBotToken: token de um Agent Bot da conta usado para postar as mensagens
+	// do aparelho (aparecem com o nome do bot e não contam como resposta humana no
+	// Chatwoot). Nunca é devolvido pelo GET.
+	DeviceBotToken string `json:"device_bot_token,omitempty"`
 	// ReadReceipts: reflete no Chatwoot os recibos do WhatsApp — "entregue" e "lida"
 	// viram o status da mensagem (os tiques ✓✓) e "lida" também atualiza o
-	// last_seen do contato na conversa (mesma técnica da Evolution API).
-	ReadReceipts bool `json:"read_receipts"`
+	// last_seen do contato na conversa (mesma técnica da Evolution API). Ligado por
+	// padrão (nil = ligado), inclusive em configs antigas sem o campo.
+	ReadReceipts *bool `json:"read_receipts,omitempty"`
 }
+
+// readReceipts diz se os recibos estão ligados (padrão: sim).
+func (c ChatwootConfig) readReceipts() bool { return c.ReadReceipts == nil || *c.ReadReceipts }
 
 // Limites da importação de histórico (evitam afogar a inbox do Chatwoot).
 const (
@@ -288,17 +298,6 @@ func (s *Session) shouldMirrorOwn(msgID string, cfg ChatwootConfig) bool {
 	return origin == selfSentAPI && cfg.MirrorAPI
 }
 
-// mirrorOutgoing diz se uma mensagem from_me espelhada entra como SAÍDA normal: só
-// com mirror_as_outgoing e só se veio do APARELHO. O que saiu pela nossa API segue
-// como nota privada (ver MirrorAsOutgoing).
-func (s *Session) mirrorOutgoing(cfg ChatwootConfig, msgID string) bool {
-	if !cfg.MirrorAsOutgoing {
-		return false
-	}
-	_, viaUs := s.selfSentOrigin(msgID)
-	return !viaUs
-}
-
 func (s *Session) chatwootPushIncoming(evt *events.Message) {
 	cfg := s.getChatwoot()
 	if !cfg.valid() {
@@ -338,14 +337,9 @@ func (s *Session) chatwootPushIncoming(evt *events.Message) {
 	}
 }
 
-// mirrorDeviceTitle é o título colado antes de toda mensagem espelhada que a
-// conta enviou pelo APARELHO (fora do Chatwoot), para o atendente identificar a
-// origem na nota privada.
-const mirrorDeviceTitle = "📲 Enviado pelo aparelho:\n"
-
-// chatwootMirrorOwn espelha, como NOTA PRIVADA, uma mensagem 1:1 que a conta
-// enviou pelo aparelho — para o agente ver no Chatwoot o que foi dito por fora.
-// Não é reenviado ao contato (nota privada não dispara o webhook de saída).
+// chatwootMirrorOwn espelha uma mensagem 1:1 que a conta enviou por fora do
+// Chatwoot (aparelho, ou API com mirror_api) — para o agente ver no Chatwoot o que
+// foi dito. Nunca é reenviada ao contato (ver ownMirrorJob).
 func (s *Session) chatwootMirrorOwn(cfg ChatwootConfig, evt *events.Message) {
 	chat := evt.Info.Chat // numa msg from_me 1:1, o Chat é o destinatário
 	phone, chatID, altID, _ := s.directIdentity(chat, evt.Info.RecipientAlt)
@@ -354,12 +348,7 @@ func (s *Session) chatwootMirrorOwn(cfg ChatwootConfig, evt *events.Message) {
 		name = chat.User
 	}
 	avatar := s.cachedAvatar(chat)
-	j := deliverContent(evt, mirrorDeviceTitle, true)
-	if s.mirrorOutgoing(cfg, evt.Info.ID) {
-		// bolha de saída normal, sem o título de espelho
-		j = deliverContent(evt, "", false)
-		j.Outgoing = true
-	}
+	j := s.ownMirrorJob(cfg, evt, "")
 	j.ChatID = chatID
 	j.Phone = phone
 	j.AltID = altID
@@ -455,11 +444,7 @@ func (s *Session) chatwootMirrorOwnGroup(cfg ChatwootConfig, evt *events.Message
 	if author == "" {
 		author = "Você"
 	}
-	j := deliverContent(evt, mirrorDeviceTitle+"*"+author+" (você)*:\n", true)
-	if s.mirrorOutgoing(cfg, evt.Info.ID) {
-		j = deliverContent(evt, "", false)
-		j.Outgoing = true
-	}
+	j := s.ownMirrorJob(cfg, evt, "*"+author+" (você)*:\n")
 	j.ChatID = chatID
 	j.Name = name
 	j.Avatar = avatar
@@ -521,7 +506,9 @@ type cwJob struct {
 	Avatar    string          `json:"avatar"`             // URL do avatar (best-effort)
 	Prefix    string          `json:"prefix"`             // prefixo colado antes do texto (autor em grupo, título de espelho)
 	Private   bool            `json:"private"`            // nota privada (espelho do que saiu por fora)
-	Outgoing  bool            `json:"outgoing,omitempty"` // mensagem de SAÍDA normal (espelho com mirror_as_outgoing)
+	Outgoing  bool            `json:"outgoing,omitempty"` // mensagem de SAÍDA normal (espelho do aparelho, device_mode open/keep)
+	Device    bool            `json:"device,omitempty"`   // veio do aparelho: posta com o Agent Bot (device_bot_token) se houver
+	OpenConv  bool            `json:"openConv,omitempty"` // após postar, passa a conversa para "aberta" (device_mode open)
 	Text      string          `json:"text"`               // texto final já formatado
 	SourceID  string          `json:"sourceId"`           // = ID da msg do WhatsApp; idempotência no Chatwoot (dedup na reentrega)
 	InReplyTo string          `json:"inReplyTo"`          // ID da msg citada (resposta)
@@ -646,13 +633,13 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 				data, derr := s.client.Download(context.Background(), dl)
 				if derr == nil && len(data) > 0 {
 					fname, mime := mediaMeta(&msg)
-					cwID, perr := cfg.postAttachmentID(convID, j.Prefix+j.Text, fname, mime, data, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+					cwID, perr := s.postAsJob(cfg, j, func(c ChatwootConfig) (int, error) {
+						return c.postAttachmentID(convID, j.Prefix+j.Text, fname, mime, data, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+					})
 					if perr != nil {
 						return fmt.Errorf("post attachment: %w", perr)
 					}
-					if j.Outgoing {
-						s.rememberCWMessage(j.SourceID, convID, cwID)
-					}
+					s.afterJobPosted(cfg, j, convID, cwID)
 					return nil
 				}
 			}
@@ -661,13 +648,13 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 	if strings.TrimSpace(j.Text) == "" {
 		return nil
 	}
-	cwID, err := cfg.postTextID(convID, j.Prefix+j.Text, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+	cwID, err := s.postAsJob(cfg, j, func(c ChatwootConfig) (int, error) {
+		return c.postTextID(convID, j.Prefix+j.Text, j.dir(), j.SourceID, j.InReplyTo, 0, j.Attrs)
+	})
 	if err != nil {
 		return fmt.Errorf("post message: %w", err)
 	}
-	if j.Outgoing {
-		s.rememberCWMessage(j.SourceID, convID, cwID)
-	}
+	s.afterJobPosted(cfg, j, convID, cwID)
 	return nil
 }
 
@@ -1071,11 +1058,26 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 		return
 	}
-	// só reenvia ao WhatsApp o que o agente realmente escreveu de novo no Chatwoot
-	if !shouldRelayWebhook(body) {
+	// só reenvia ao WhatsApp o que o agente realmente escreveu de novo no Chatwoot —
+	// ou uma mensagem que falhou e o atendente mandou "Reenviar" (ver isRetryCandidate)
+	if isRetryCandidate(body) {
+		if !sess.claimChatwootRetry(body) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.log.Info("chatwoot->wa: reenviando mensagem após \"Reenviar\" no Chatwoot", "cw_msg", asInt(body["id"]))
+	} else if !shouldRelayWebhook(body) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	// uma mesma mensagem não é processada duas vezes ao mesmo tempo (ex.: o
+	// Chatwoot marca "falhou" por timeout enquanto o envio ainda está em curso)
+	if !sess.beginRelay(asInt(body["id"])) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	defer sess.endRelay(asInt(body["id"]))
+	relayStart := time.Now()
 
 	chatID := chatIDFromWebhook(body)
 	if chatID == "" {
@@ -1183,8 +1185,14 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 	if waMsgID != "" {
 		if cwMsgID := asInt(body["id"]); cwMsgID != 0 {
 			go sess.setMessageSourceID(cwMsgID, waMsgID)
-			// acompanha os recibos (entregue/lida) desta mensagem do agente
+			// acompanha os recibos (entregue/lida) desta mensagem do agente e marca
+			// que ela já saiu (um "Reenviar" posterior não a duplica)
 			sess.rememberCWMessage(waMsgID, cwConvID, cwMsgID)
+			// o Chatwoot espera o webhook só por ~5s e marca "falhou" se demorar
+			// (ex.: várias fotos). Saiu de fato: volta para "enviado".
+			if time.Since(relayStart) > cwWebhookSlow && cwConvID != 0 {
+				go sess.getChatwoot().setMessageStatus(cwConvID, cwMsgID, "sent", "")
+			}
 		}
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		return
@@ -1204,7 +1212,7 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 			"chat", chatID, "err", errMsg)
 		// com read_receipts, a mensagem fica marcada como "falhou" (com o motivo) no
 		// Chatwoot, visível para o atendente.
-		if cfg := sess.getChatwoot(); cfg.ReadReceipts {
+		if cfg := sess.getChatwoot(); cfg.readReceipts() {
 			if cwMsgID := asInt(body["id"]); cwMsgID != 0 && cwConvID != 0 {
 				go cfg.setMessageStatus(cwConvID, cwMsgID, "failed", errMsg)
 			}
@@ -1569,6 +1577,13 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	if cfg.AccountToken == "" {
 		cfg.AccountToken = sess.getChatwoot().AccountToken
 	}
+	if cfg.DeviceBotToken == "" {
+		cfg.DeviceBotToken = sess.getChatwoot().DeviceBotToken
+	}
+	if !validDeviceMode(cfg.DeviceMode) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "device_mode deve ser open, keep ou note"})
+		return
+	}
 	if !cfg.valid() {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "url, account_id, account_token e inbox_id são obrigatórios"})
 		return
@@ -1576,8 +1591,7 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	sess.setChatwoot(cfg)
 	b, _ := json.Marshal(cfg)
 	_ = sess.mgr.store.setChatwoot(r.Context(), sess.id, string(b))
-	cfg.AccountToken = "" // não devolve o token (mesma regra do GET)
-	writeJSON(w, http.StatusOK, map[string]any{"chatwoot": cfg})
+	writeJSON(w, http.StatusOK, map[string]any{"chatwoot": publicChatwootCfg(cfg), "device_bot": cfg.DeviceBotToken != ""})
 }
 
 func (s *server) handleGetChatwoot(w http.ResponseWriter, r *http.Request) {
@@ -1586,8 +1600,18 @@ func (s *server) handleGetChatwoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cfg := sess.getChatwoot()
-	cfg.AccountToken = "" // não devolve o token
-	writeJSON(w, http.StatusOK, map[string]any{"chatwoot": cfg, "enabled": sess.getChatwoot().valid()})
+	writeJSON(w, http.StatusOK, map[string]any{"chatwoot": publicChatwootCfg(cfg), "enabled": cfg.valid(), "device_bot": cfg.DeviceBotToken != ""})
+}
+
+// publicChatwootCfg é a config como o GET/PUT a devolvem: sem os tokens e com os
+// padrões explícitos (device_mode, read_receipts), para o cliente ver o efetivo.
+func publicChatwootCfg(cfg ChatwootConfig) ChatwootConfig {
+	cfg.AccountToken = ""
+	cfg.DeviceBotToken = ""
+	cfg.DeviceMode = cfg.deviceMode()
+	rr := cfg.readReceipts()
+	cfg.ReadReceipts = &rr
+	return cfg
 }
 
 // handleChatwootOpenGroup cria/garante um contato + conversa no Chatwoot para um

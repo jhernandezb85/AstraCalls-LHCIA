@@ -152,7 +152,7 @@ func TestFindOpenConversationDoesNotCreate(t *testing.T) {
 func TestReceiptsUpdateStatusAndLastSeen(t *testing.T) {
 	f, srv := newFakeCW(t)
 	s := &Session{id: "sessA"}
-	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7, ReadReceipts: true})
+	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7})
 	s.rememberCWMessage("WAMSG1", 302, 900)
 
 	contact := types.NewJID("5215512345678", types.DefaultUserServer)
@@ -189,12 +189,12 @@ func TestReceiptsIgnoredWhenDisabledOrNotApplicable(t *testing.T) {
 	group := types.NewJID("120363000000000000", types.GroupServer)
 
 	off := &Session{id: "off"}
-	off.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7}) // read_receipts desligado
+	off.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7, ReadReceipts: boolPtr(false)}) // read_receipts desligado
 	off.rememberCWMessage("M1", 302, 900)
 	off.chatwootOnReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: contact}, MessageIDs: []types.MessageID{"M1"}, Type: types.ReceiptTypeRead})
 
 	on := &Session{id: "on"}
-	on.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7, ReadReceipts: true})
+	on.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 7})
 	on.rememberCWMessage("M2", 302, 901)
 	// recibo das próprias telas da conta, e recibo em grupo: ignorados
 	on.chatwootOnReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: contact, IsFromMe: true}, MessageIDs: []types.MessageID{"M2"}, Type: types.ReceiptTypeRead})
@@ -246,20 +246,5 @@ func TestEchoWithSourceIDIsNotRelayed(t *testing.T) {
 	body := map[string]any{"event": "message_created", "message_type": "outgoing", "private": false, "source_id": "WAID123"}
 	if shouldRelayWebhook(body) {
 		t.Fatal("eco com source_id não deve ser reenviado")
-	}
-}
-
-func TestMirrorOutgoingOnlyForDevice(t *testing.T) {
-	s := &Session{id: "m"}
-	on := ChatwootConfig{MirrorAsOutgoing: true}
-	if !s.mirrorOutgoing(on, "DEVICE1") {
-		t.Fatal("mensagem do aparelho deve virar saída normal")
-	}
-	s.markSelfSent("API1", selfSentAPI)
-	if s.mirrorOutgoing(on, "API1") {
-		t.Fatal("mensagem enviada pela API deve continuar como nota privada")
-	}
-	if s.mirrorOutgoing(ChatwootConfig{}, "DEVICE2") {
-		t.Fatal("desligado por padrão")
 	}
 }

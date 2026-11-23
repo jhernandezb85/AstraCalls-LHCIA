@@ -130,6 +130,21 @@ func newSessionStore(ctx context.Context, db *sql.DB) (*sessionStore, error) {
 	}
 	_, _ = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS chatwoot_outbox_due ON chatwoot_outbox (dead, next_at)`)
 
+	// Elo mensagem do WhatsApp <-> mensagem do Chatwoot (ver chatwoot_receipts.go):
+	// recibos entregue/lida e proteção do "Reenviar" sobrevivem a restart.
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS chatwoot_msg_refs (
+		session_id TEXT NOT NULL,
+		wa_id      TEXT NOT NULL,
+		conv_id    INT NOT NULL,
+		cw_msg_id  INT NOT NULL,
+		created_at BIGINT NOT NULL,
+		PRIMARY KEY (session_id, wa_id)
+	)`); err != nil {
+		return nil, err
+	}
+	_, _ = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS chatwoot_msg_refs_cw ON chatwoot_msg_refs (session_id, cw_msg_id)`)
+	_, _ = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS chatwoot_msg_refs_age ON chatwoot_msg_refs (created_at)`)
+
 	// Chaves MCP por sessão (ver mcpkeys.go); só o hash da chave fica salvo.
 	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS mcp_keys (
 		id           TEXT PRIMARY KEY,
@@ -243,6 +258,41 @@ func (s *sessionStore) setRecording(ctx context.Context, id string, on bool) err
 
 func (s *sessionStore) setProxy(ctx context.Context, id, proxyURL string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET proxy = $1 WHERE id = $2`, proxyURL, id)
+	return err
+}
+
+func (s *sessionStore) saveCWRef(ctx context.Context, sessionID, waID string, convID, msgID int, at int64) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO chatwoot_msg_refs (session_id, wa_id, conv_id, cw_msg_id, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (session_id, wa_id) DO UPDATE
+			SET conv_id = EXCLUDED.conv_id, cw_msg_id = EXCLUDED.cw_msg_id, created_at = EXCLUDED.created_at`,
+		sessionID, waID, convID, msgID, at)
+	return err
+}
+
+func (s *sessionStore) loadCWRef(ctx context.Context, sessionID, waID string) (convID, msgID int, at int64, ok bool) {
+	err := s.db.QueryRowContext(ctx,
+		`SELECT conv_id, cw_msg_id, created_at FROM chatwoot_msg_refs WHERE session_id = $1 AND wa_id = $2`,
+		sessionID, waID).Scan(&convID, &msgID, &at)
+	return convID, msgID, at, err == nil
+}
+
+func (s *sessionStore) hasCWMsg(ctx context.Context, sessionID string, msgID int) bool {
+	var one int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT 1 FROM chatwoot_msg_refs WHERE session_id = $1 AND cw_msg_id = $2 LIMIT 1`,
+		sessionID, msgID).Scan(&one)
+	return err == nil
+}
+
+func (s *sessionStore) pruneCWRefs(ctx context.Context, before int64) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM chatwoot_msg_refs WHERE created_at < $1`, before)
+	return err
+}
+
+func (s *sessionStore) deleteCWRefsForSession(ctx context.Context, sessionID string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM chatwoot_msg_refs WHERE session_id = $1`, sessionID)
 	return err
 }
 
