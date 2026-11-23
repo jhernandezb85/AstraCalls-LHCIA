@@ -4,6 +4,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `vX.Y.Z` es la versión oficial de AstraCalls en la que se basa y `N` la revisión propia.
 Para volver atrás, poner en el compose la versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+## v1.1.6-lhcia.3
+
+- Chatwoot: el ✓✓ "entregado" ya no se pierde cuando WhatsApp lo confirma antes de que el
+  mensaje termine de publicarse en Chatwoot (contacto en línea): el recibo se guarda unos
+  minutos y se aplica al publicarse.
+
 ## v1.1.6-lhcia.2
 
 - Chatwoot: con `device_mode=open`, la conversación la abre el bot del celular (el aviso dice
