@@ -383,6 +383,9 @@ func (s *Session) chatwootPushDirect(cfg ChatwootConfig, evt *events.Message) {
 	// origem de anúncio (Click to WhatsApp): registra como nota privada p/ o
 	// atendente saber de qual campanha o contato veio.
 	j.Referral = messageReferral(evt.Message)
+	// e uma linha curta do anúncio no próprio balão do cliente (como o WhatsApp
+	// mostra o cartão do anúncio): o Captain não lê notas privadas, mas lê isto.
+	j.Prefix = referralLine(j.Referral) + j.Prefix
 	s.chatwootSend(cfg, j)
 }
 
@@ -546,6 +549,37 @@ func formatReferralNote(ref map[string]any) string {
 	line("Origen", "utmSource")
 	line("Medio", "utmMedium")
 	return b.String()
+}
+
+// referralLine resume o anúncio numa linha para o balão do cliente ("" sem
+// anúncio): título e o começo da descrição.
+func referralLine(ref map[string]any) string {
+	if len(ref) == 0 {
+		return ""
+	}
+	title := strings.TrimSpace(asStr(ref["title"]))
+	desc := ""
+	for _, l := range strings.Split(asStr(ref["body"]), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			desc = l
+			break
+		}
+	}
+	if r := []rune(desc); len(r) > 120 {
+		desc = strings.TrimSpace(string(r[:120])) + "…"
+	}
+	parts := make([]string, 0, 2)
+	if title != "" {
+		parts = append(parts, title)
+	}
+	if desc != "" && desc != title {
+		parts = append(parts, desc)
+	}
+	if len(parts) == 0 {
+		return "📢 _Desde un anuncio_\n"
+	}
+	// "_" fecharia o itálico no meio
+	return "📢 _Desde el anuncio: " + strings.ReplaceAll(strings.Join(parts, " — "), "_", " ") + "_\n"
 }
 
 // plainLines tira a indentação de cada linha: no Chatwoot (markdown), linhas que

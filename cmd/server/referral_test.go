@@ -64,6 +64,13 @@ func TestFormatReferralNote(t *testing.T) {
 	if strings.Contains(indented, "\n    ") || strings.Contains(indented, "\n\t") {
 		t.Errorf("descrição com indentação vira bloco de código no Chatwoot: %q", indented)
 	}
+	line := referralLine(map[string]any{"title": "Mezcladora", "body": "\n  ¿Tu obra necesita mezclas parejas y a tiempo? 🏗️\n\nConoce la Mezcladora..."})
+	if line != "📢 _Desde el anuncio: Mezcladora — ¿Tu obra necesita mezclas parejas y a tiempo? 🏗️_\n" {
+		t.Errorf("linha do anúncio = %q", line)
+	}
+	if referralLine(nil) != "" || referralLine(map[string]any{"ctwaClid": "x"}) != "📢 _Desde un anuncio_\n" {
+		t.Error("sem anúncio: vazio; sem título/descrição: genérico")
+	}
 	if formatReferralNote(nil) != "" {
 		t.Error("referral nil deveria dar nota vazia")
 	}
