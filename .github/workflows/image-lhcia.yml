@@ -2,16 +2,22 @@ name: Imagen LHCIA (GHCR, amd64)
 
 # Imagen propia del fork para producción: solo linux/amd64 (el servidor es x86),
 # construida en GitHub Actions (nunca en el VPS) y publicada en GitHub Container
-# Registry. Se dispara con cada push a la rama `lhcia` o a mano.
+# Registry. Se dispara con cada push a la rama `lhcia`, con cada etiqueta de
+# versión `vX.Y.Z-lhcia.N` o a mano.
 #
-#   ghcr.io/<dueño>/astracalls:lhcia            -> última versión de la rama
-#   ghcr.io/<dueño>/astracalls:lhcia-<sha7>     -> versión fija (para volver atrás)
+#   ghcr.io/<dueño>/astracalls:lhcia              -> última versión de la rama (pruebas)
+#   ghcr.io/<dueño>/astracalls:v1.1.6-lhcia.1     -> versión fija (producción)
+#   ghcr.io/<dueño>/astracalls:lhcia-<sha7>       -> versión fija por commit
+#
+# Versiones: vX.Y.Z = versión oficial de AstraCalls en la que se basa; -lhcia.N =
+# revisión propia. Ver CHANGELOG-LHCIA.md.
 #
 # No usa secretos extra: publica con el GITHUB_TOKEN del propio repositorio.
 
 on:
   push:
     branches: [lhcia]
+    tags: ['v*-lhcia.*']
   workflow_dispatch:
 
 concurrency:
@@ -59,7 +65,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/astracalls
           tags: |
-            type=raw,value=lhcia
+            type=raw,value=lhcia,enable=${{ github.ref == 'refs/heads/lhcia' }}
+            type=ref,event=tag
             type=sha,prefix=lhcia-,format=short
 
       - uses: docker/build-push-action@v6
@@ -70,7 +77,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            BUILD_VERSION=lhcia
+            BUILD_VERSION=${{ github.ref_type == 'tag' && github.ref_name || 'lhcia' }}
             BUILD_REV=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
