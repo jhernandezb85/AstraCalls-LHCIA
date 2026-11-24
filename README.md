@@ -67,6 +67,7 @@ Se configuran en `PUT /api/sessions/{id}/chatwoot` (o desde el
 | `device_bot_token` | token | — | Token del Agent Bot que publica los mensajes del celular (nunca se devuelve) |
 | `read_receipts` | `true` · `false` | `true` | Checks de entregado y leído, y fallidos con motivo |
 | `contact_delete` | `note` · `delete` | `note` | Qué hacer cuando el cliente elimina un mensaje |
+| `ad_attributes` | `true` · `false` | `false` | Guarda los datos del anuncio en los atributos de la conversación (para CAPI) |
 
 ### Instalación
 
@@ -151,6 +152,7 @@ Set through `PUT /api/sessions/{id}/chatwoot` (or the
 | `device_bot_token` | token | — | Agent Bot token used to post phone messages (never returned) |
 | `read_receipts` | `true` · `false` | `true` | Delivered/read ticks and failed sends with reason |
 | `contact_delete` | `note` · `delete` | `note` | What to do when the customer deletes a message |
+| `ad_attributes` | `true` · `false` | `false` | Stores the ad data in the conversation's custom attributes (for CAPI) |
 
 ### Install
 

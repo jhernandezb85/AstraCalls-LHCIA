@@ -11,6 +11,14 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.6-lhcia.11
+
+- Chatwoot: opción `ad_attributes` (apagada por defecto). Con ella, cuando un cliente llega
+  por un anuncio, los datos se guardan en los atributos de la conversación: `ctwa_clid`,
+  `ad_id`, `ad_title`, `ad_source`, `ad_url`. Sirven para la API de conversiones de Meta
+  (CAPI) y para automatizaciones, sin leer la nota privada. Se suman a los atributos que ya
+  tenga la conversación (el anuncio más reciente reemplaza al anterior).
+
 ### v1.1.6-lhcia.10
 
 - Chatwoot: el primer mensaje de un contacto que llega por un anuncio (CTWA) lleva arriba una
@@ -94,6 +102,14 @@ Image versions of `ghcr.io/jhernandezb85/astracalls`. Format `vX.Y.Z-lhcia.N`: `
 the official AstraCalls version it's based on and `N` our own revision. `latest` points to the
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
+
+### v1.1.6-lhcia.11
+
+- Chatwoot: `ad_attributes` option (off by default). When on, if a customer comes from an ad,
+  the data is stored in the conversation's custom attributes: `ctwa_clid`, `ad_id`,
+  `ad_title`, `ad_source`, `ad_url`. Meant for Meta's Conversions API (CAPI) and automations,
+  without parsing the private note. Merged with the conversation's existing attributes (the
+  latest ad replaces the previous one).
 
 ### v1.1.6-lhcia.10
 
