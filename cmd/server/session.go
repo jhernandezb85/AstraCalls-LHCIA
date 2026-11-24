@@ -32,8 +32,9 @@ import (
 )
 
 type Session struct {
-	id   string
-	name string
+	id     string
+	name   string // nome no painel; ler com displayName() (pode ser renomeado)
+	nameMu sync.RWMutex
 	mgr  *SessionManager
 	log  *slog.Logger
 
@@ -1038,10 +1039,10 @@ func (s *Session) notifyDisconnected(reason, action string) {
 
 	s.log.Warn("sessão do WhatsApp desconectada — avisando", "reason", reason)
 	s.dispatchWebhook("session_status", map[string]any{
-		"status": "disconnected", "reason": reason, "session": s.id, "name": s.name,
+		"status": "disconnected", "reason": reason, "session": s.id, "name": s.displayName(),
 	})
 	text := "⚠️ *AstraCalls — WhatsApp desconectado*\n" +
-		"El número *" + s.name + "* fue " + reason + ".\n" + action
+		"El número *" + s.displayName() + "* fue " + reason + ".\n" + action
 	s.chatwootAlert(text)
 }
 
@@ -1069,7 +1070,7 @@ func (s *Session) info() SessionInfo {
 	extErr := s.sipExtError
 	s.mu.Unlock()
 	return SessionInfo{
-		ID: s.id, Name: s.name, JID: jid, LastJID: last, State: a.State,
+		ID: s.id, Name: s.displayName(), JID: jid, LastJID: last, State: a.State,
 		Paired: a.Paired || jid != "", Recording: rec,
 		SIPUser: s.SIPUser, SIPPass: s.SIPPass, SIPURL: s.SIPURL,
 		SIPExtEnabled: extEnabled, SIPExtHost: extHost, SIPExtPort: extPort,

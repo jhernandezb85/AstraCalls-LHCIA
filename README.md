@@ -55,6 +55,7 @@ sigue vigente y está en [README.upstream.md](./README.upstream.md) (en portugu�
   atributos creados (desde Integraciones → "Meta · API de conversiones" del provisioner).
 
 **Otros**
+- El nombre de cada número se puede cambiar desde el panel.
 - Textos que AstraCalls pone en Chatwoot traducidos al español.
 - La relación mensaje WhatsApp ↔ Chatwoot se guarda en Postgres (sobrevive reinicios).
 
@@ -142,6 +143,7 @@ applies and is in [README.upstream.md](./README.upstream.md) (in Portuguese).
   (created from the provisioner's Integrations → "Meta · API de conversiones").
 
 **Other**
+- Each number's name can be changed from the panel.
 - Texts AstraCalls posts to Chatwoot are translated to Spanish.
 - The WhatsApp ↔ Chatwoot message link is stored in Postgres (survives restarts).
 

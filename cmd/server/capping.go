@@ -165,12 +165,12 @@ func (s *Session) onMessageCapping(c *messageCapping) {
 		"used", c.UsedQuota, "total", c.TotalQuota, "cycle_end", c.CycleEndAt)
 	s.dispatchWebhook("message_capping", map[string]any{
 		"session":         s.id,
-		"name":            s.name,
+		"name":            s.displayName(),
 		"previous_status": prev,
 		"capping":         c,
 	})
 	if alert {
-		s.chatwootAlert(cappingAlertText(s.name, c))
+		s.chatwootAlert(cappingAlertText(s.displayName(), c))
 	}
 }
 

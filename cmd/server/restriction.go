@@ -44,7 +44,7 @@ func (s *Session) handleReachoutTimelock(evt *events.NotifyAccountReachoutTimelo
 		"ends_at":           unixMillisOrZero(ends),
 		"seconds_remaining": secondsRemaining(ends),
 		"session":           s.id,
-		"name":              s.name,
+		"name":              s.displayName(),
 	})
 
 	if evt.IsActive && !alerted {
@@ -52,7 +52,7 @@ func (s *Session) handleReachoutTimelock(evt *events.NotifyAccountReachoutTimelo
 		s.restrictionAlerted = true
 		s.mu.Unlock()
 		text := "⚠️ *AstraCalls — número con restricción de WhatsApp*\n" +
-			"WhatsApp aplicó una restricción de alcance (anti-spam) al número *" + s.name + "*" +
+			"WhatsApp aplicó una restricción de alcance (anti-spam) al número *" + s.displayName() + "*" +
 			restrictionWhenText(ends) + ".\n" +
 			"Los mensajes y llamadas a quien aún NO te ha respondido pueden no llegar. " +
 			"Evita los envíos masivos y pide al contacto que te responda o guarde tu número."

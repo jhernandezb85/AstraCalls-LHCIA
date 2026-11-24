@@ -81,7 +81,7 @@ func (m *SessionManager) accountIDForSession(sessionID string) int {
 		if c := s.getChatwoot(); c.valid() {
 			return c.AccountID
 		}
-		acct, _ := scopeFromName(sessionID, s.name)
+		acct, _ := scopeFromName(sessionID, s.displayName())
 		return acct
 	}
 	return 0
@@ -111,7 +111,7 @@ func (m *SessionManager) inboxIDForSession(sessionID string) int {
 		if c := s.getChatwoot(); c.valid() {
 			return c.InboxID
 		}
-		_, inbox := scopeFromName(sessionID, s.name)
+		_, inbox := scopeFromName(sessionID, s.displayName())
 		return inbox
 	}
 	return 0

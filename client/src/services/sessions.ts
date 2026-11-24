@@ -11,6 +11,18 @@ export const createSession = (name: string) =>
 
 export const deleteSession = (id: string) => apiDelete(`/api/sessions/${id}`);
 
+export const renameSession = async (id: string, name: string): Promise<void> => {
+  const r = await fetch(apiUrl(`/api/sessions/${id}`), {
+    method: "PATCH",
+    headers: { "X-Client-Id": getClientId(), "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error(j.error || `rename ${r.status}`);
+  }
+};
+
 const postVoid = async (path: string): Promise<void> => {
   const r = await fetch(apiUrl(path), {
     method: "POST",

@@ -11,6 +11,13 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.6-lhcia.14
+
+- Panel: el nombre de cada número se puede cambiar (lápiz junto al nombre en la lista; Enter
+  guarda, Esc cancela). API: `PATCH /api/sessions/{id}` con `{"name": "..."}`. El nombre nuevo
+  también se usa en los avisos que AstraCalls pone en Chatwoot. Una sesión creada por AstraChat
+  que todavía no tiene Chatwoot (nombre `inboxN_accM`) no se puede renombrar hasta conectarlo.
+
 ### v1.1.6-lhcia.13
 
 - Atributos del anuncio con los nombres de la cuenta: `ctwa_clid` y `meta_ad_id` (los que usa
@@ -115,6 +122,13 @@ Image versions of `ghcr.io/jhernandezb85/astracalls`. Format `vX.Y.Z-lhcia.N`: `
 the official AstraCalls version it's based on and `N` our own revision. `latest` points to the
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
+
+### v1.1.6-lhcia.14
+
+- Panel: each number's name can be changed (pencil next to the name in the list; Enter saves,
+  Esc cancels). API: `PATCH /api/sessions/{id}` with `{"name": "..."}`. The new name is also
+  used in the notices AstraCalls posts to Chatwoot. A session created by AstraChat that has no
+  Chatwoot yet (name `inboxN_accM`) can't be renamed until it's connected.
 
 ### v1.1.6-lhcia.13
 

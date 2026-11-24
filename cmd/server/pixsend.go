@@ -350,7 +350,7 @@ func (s *server) sendPixCharge(sess *Session, w http.ResponseWriter, r *http.Req
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	msg, _, err := buildPixChargeMessage(c, sess.name)
+	msg, _, err := buildPixChargeMessage(c, sess.displayName())
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return

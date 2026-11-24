@@ -246,6 +246,11 @@ func (s *sessionStore) setWebhooks(ctx context.Context, id, listJSON, url, secre
 	return err
 }
 
+func (s *sessionStore) setName(ctx context.Context, id, name string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET name = $1 WHERE id = $2`, name, id)
+	return err
+}
+
 func (s *sessionStore) setChatwoot(ctx context.Context, id, cfgJSON string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET chatwoot = $1 WHERE id = $2`, cfgJSON, id)
 	return err

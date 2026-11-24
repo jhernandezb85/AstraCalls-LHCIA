@@ -783,6 +783,23 @@ paths:
         "404": { description: Não encontrado }
 
   /api/sessions/{sid}:
+    patch:
+      summary: Renomear a sessão
+      description: Troca o nome exibido no painel e nos avisos do Chatwoot. Uma sessão do AstraChat ainda sem Chatwoot (nome inboxN_accM) não pode ser renomeada (409).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 60 }
+      responses:
+        "200": { description: Renomeada }
+        "400": { description: Nome vazio }
+        "404": { description: Sessão não encontrada }
+        "409": { description: Sessão ainda escopada pelo nome }
     delete:
       tags: [Sessões]
       summary: Remove a conta

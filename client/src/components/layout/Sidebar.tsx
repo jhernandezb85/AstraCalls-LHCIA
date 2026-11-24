@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Loader2, Plus, Trash2, KeyRound } from "lucide-react";
+import { Loader2, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { setActiveSession, useSessions } from "@/stores/sessions";
-import { createSession, deleteSession } from "@/services/sessions";
+import { createSession, deleteSession, renameSession } from "@/services/sessions";
 import { EXTENSION_DOWNLOAD_URL } from "@/lib/passkey";
 import { phoneFromJid } from "@/utils/format";
 import { useVersion } from "@/hooks/useVersion";
@@ -25,6 +25,7 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const activeId = useSessions((s) => s.activeId);
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<SessionInfo | null>(null);
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const { label: version, commit } = useVersion();
 
   const onNew = async () => {
@@ -37,6 +38,19 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
       toast.error((e as Error).message);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const saveName = async () => {
+    if (!editing) return;
+    const { id, name } = editing;
+    const current = sessions.find((x) => x.id === id)?.name;
+    setEditing(null);
+    if (!name.trim() || name.trim() === current) return;
+    try {
+      await renameSession(id, name.trim());
+    } catch (e) {
+      toast.error((e as Error).message);
     }
   };
 
@@ -86,13 +100,43 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
           >
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-card", dotClass[s.state])} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{s.name}</p>
+              {editing?.id === s.id ? (
+                <input
+                  id={`rename-${s.id}`}
+                  autoFocus
+                  maxLength={60}
+                  value={editing.name}
+                  aria-label="Nome da conta"
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setEditing({ id: s.id, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") void saveName();
+                    if (e.key === "Escape") setEditing(null);
+                  }}
+                  onBlur={() => void saveName()}
+                  className="w-full rounded-md border bg-background px-1.5 py-0.5 text-sm font-medium text-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+              ) : (
+                <p className="truncate font-medium">{s.name}</p>
+              )}
               {phoneFromJid(s.jid) ? (
                 <p className="truncate text-xs text-muted-foreground">{phoneFromJid(s.jid)}</p>
               ) : phoneFromJid(s.lastJid) ? (
                 <p className="truncate text-xs text-muted-foreground">{phoneFromJid(s.lastJid)}</p>
               ) : null}
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing({ id: s.id, name: s.name });
+              }}
+              className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+              aria-label={`Renomear ${s.name}`}
+              title="Renomear"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
