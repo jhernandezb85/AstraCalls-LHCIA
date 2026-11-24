@@ -1,15 +1,56 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
-// Dados do anúncio (Click to WhatsApp) nos atributos da CONVERSA do Chatwoot
-// (ad_attributes): ficam estruturados para automações/n8n enviarem o evento ao
-// Meta (CAPI) sem ler a nota privada. Os atributos precisam estar definidos na
-// conta para aparecerem no painel (o provisioner os cria ao ligar a opção).
+const adAttrsCacheTTL = 10 * time.Minute
+
+type adAttrsState struct {
+	on bool
+	at time.Time
+}
+
+var adAttrsCache sync.Map // "<url>|<conta>" -> adAttrsState
+
+// adAttributesDefined diz se a conta tem os atributos do anúncio definidos
+// (cache: 10 min se ligado, 2 min se desligado; em erro, desligado e tenta de novo).
+func (c ChatwootConfig) adAttributesDefined() bool {
+	key := fmt.Sprintf("%s|%d", c.URL, c.AccountID)
+	if v, ok := adAttrsCache.Load(key); ok {
+		st := v.(adAttrsState)
+		ttl := adAttrsCacheTTL
+		if !st.on {
+			ttl = 2 * time.Minute // recém-ligado na conta: percebe logo
+		}
+		if time.Since(st.at) < ttl {
+			return st.on
+		}
+	}
+	res, code, err := c.reqList(http.MethodGet, "/custom_attribute_definitions?attribute_model=conversation_attribute")
+	if err != nil || code != http.StatusOK {
+		return false
+	}
+	on := false
+	for _, it := range res {
+		if asStr(asMap(it)["attribute_key"]) == "ctwa_clid" {
+			on = true
+			break
+		}
+	}
+	adAttrsCache.Store(key, adAttrsState{on: on, at: time.Now()})
+	return on
+}
+
+// Dados do anúncio (Click to WhatsApp) nos atributos da CONVERSA do Chatwoot:
+// ficam estruturados para automações/n8n enviarem o evento ao Meta (CAPI) sem ler
+// a nota privada. É uma opção da CONTA: vale quando a conta tem o atributo
+// ctwa_clid definido (o provisioner o cria em Integrações); sem ele, nada é gravado.
 
 // adAttributes extrai do referral os atributos gravados na conversa.
 func adAttributes(ref map[string]any) map[string]any {
@@ -58,4 +99,22 @@ func (c ChatwootConfig) mergeConversationAttrs(convID int, attrs map[string]any)
 		return fmt.Errorf("custom_attributes http %d", code)
 	}
 	return nil
+}
+
+// reqList é o req para respostas que são uma lista JSON (ex.: definições de
+// atributos). Sem corpo.
+func (c ChatwootConfig) reqList(method, path string) ([]any, int, error) {
+	req, err := http.NewRequest(method, c.base()+path, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("api_access_token", c.AccountToken)
+	resp, err := cwHTTP.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	var out []any
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+	return out, resp.StatusCode, nil
 }

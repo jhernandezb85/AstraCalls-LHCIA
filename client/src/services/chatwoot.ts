@@ -21,7 +21,6 @@ export type ChatwootConfig = {
   /** Recibos entregue/lida no Chatwoot (padrão: ligado). */
   read_receipts?: boolean;
   contact_delete?: 'note' | 'delete';
-  ad_attributes?: boolean;
 };
 
 export const getChatwoot = (sid: string) =>

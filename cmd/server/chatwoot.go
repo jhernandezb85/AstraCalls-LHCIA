@@ -102,9 +102,6 @@ type ChatwootConfig struct {
 	// para todos (ver chatwoot_delete.go). "note" (padrão): mantém a mensagem e
 	// posta uma nota privada; "delete": apaga também no Chatwoot.
 	ContactDelete string `json:"contact_delete,omitempty"`
-	// AdAttributes: grava os dados do anúncio (ctwa_clid, ad_id, ad_title,
-	// ad_source, ad_url) nos atributos da conversa (ver chatwoot_ads.go).
-	AdAttributes bool `json:"ad_attributes"`
 }
 
 // readReceipts diz se os recibos estão ligados (padrão: sim).
@@ -674,8 +671,9 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 		if perr := cfg.postText(convID, note, cwPrivate, j.SourceID+":ref", "", 0, nil); perr != nil {
 			s.log.Debug("chatwoot: nota de referral falhou", "err", perr, "source", j.SourceID)
 		}
-		// e, com ad_attributes, os dados estruturados na conversa (CAPI/n8n)
-		if cfg.AdAttributes {
+		// e os dados estruturados na conversa (CAPI/n8n), se a conta tiver os
+		// atributos do anúncio definidos (ver chatwoot_ads.go)
+		if cfg.adAttributesDefined() {
 			if aerr := cfg.mergeConversationAttrs(convID, adAttributes(j.Referral)); aerr != nil {
 				s.log.Warn("chatwoot: atributos do anúncio falharam", "err", aerr, "conv", convID)
 			}

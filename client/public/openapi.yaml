@@ -313,7 +313,6 @@ components:
         device_title: { type: string }
         read_receipts: { type: boolean }
         contact_delete: { type: string, enum: [note, delete] }
-        ad_attributes: { type: boolean }
     CallRecord:
       type: object
       properties:
@@ -1669,7 +1668,6 @@ paths:
                 device_bot_token: { type: string, description: "Token de acesso de um Agent Bot da conta usado para postar as mensagens do aparelho (aparecem com o nome do bot e não contam como resposta humana). Vazio na edição = mantém o atual. Nunca é devolvido; a resposta traz device_bot=true quando configurado" }
                 read_receipts: { type: boolean, default: true, description: "Reflete os recibos do WhatsApp no Chatwoot: entregue/lida viram o status da mensagem (✓✓) e lida atualiza o last_seen do contato; falha de envio marca a mensagem como falhou com o motivo. O 'Reenviar' do Chatwoot reenvia de verdade pelo WhatsApp" }
                 contact_delete: { type: string, enum: [note, delete], default: note, description: "Quando o CONTATO apaga uma mensagem para todos: note mantém a mensagem e posta uma nota privada; delete apaga também no Chatwoot. O que a conta apaga no celular some do Chatwoot, e uma mensagem de saída apagada no Chatwoot é apagada para todos no WhatsApp (até ~2 dias e meio após o envio)" }
-                ad_attributes: { type: boolean, default: false, description: "Grava os dados do anúncio (Click to WhatsApp) nos atributos da conversa: ctwa_clid, ad_id, ad_title, ad_source, ad_url (para CAPI/automações). Os atributos devem estar definidos na conta para aparecer no painel" }
       responses:
         "200":
           description: Conectado (account_token omitido na resposta)

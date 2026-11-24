@@ -51,3 +51,25 @@ func TestMergeConversationAttrsKeepsOthers(t *testing.T) {
 		t.Fatalf("deve somar aos atributos existentes (o anúncio mais recente vence): %v", posted)
 	}
 }
+
+func TestAdAttributesDefinedIsAccountLevel(t *testing.T) {
+	defs := []map[string]any{{"attribute_key": "ciudad"}}
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_ = json.NewEncoder(w).Encode(defs)
+	}))
+	defer srv.Close()
+	off := ChatwootConfig{URL: srv.URL, AccountID: 8, AccountToken: "t", InboxID: 1}
+	if off.adAttributesDefined() {
+		t.Fatal("sem ctwa_clid definido na conta: não grava")
+	}
+	defs = append(defs, map[string]any{"attribute_key": "ctwa_clid"})
+	on := ChatwootConfig{URL: srv.URL, AccountID: 9, AccountToken: "t", InboxID: 2}
+	if !on.adAttributesDefined() || !on.adAttributesDefined() {
+		t.Fatal("com ctwa_clid definido: grava")
+	}
+	if calls != 2 {
+		t.Fatalf("o resultado fica em cache por conta: %d chamadas", calls)
+	}
+}
