@@ -121,3 +121,41 @@ func writeTestJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(v)
 }
+
+// TestEnsureContactSearch500Fallback: um contact_inbox órfão (caixa apagada) faz
+// a busca do Chatwoot responder 500. O ensureContact repete a busca sem os
+// contact_inboxes, acha o contato e garante o source_id — sem tentar criar
+// (que daria 422 "já existe" e a mensagem acabaria descartada).
+func TestEnsureContactSearch500Fallback(t *testing.T) {
+	created := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/contacts/search"):
+			if r.URL.Query().Get("include_contact_inboxes") != "false" {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			writeTestJSON(w, map[string]any{"payload": []any{map[string]any{
+				"id": 18, "identifier": "51960960523@s.whatsapp.net", "phone_number": "+51960960523",
+			}}})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/contacts/18/contact_inboxes"):
+			writeTestJSON(w, map[string]any{"source_id": "src-18"})
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/contacts"):
+			created = true
+			w.WriteHeader(http.StatusUnprocessableEntity)
+		default:
+			t.Errorf("chamada inesperada: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	cfg := ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "tok", InboxID: 37}
+	id, sid, err := cfg.ensureContact("51960960523@s.whatsapp.net", "51960960523", "Yasmi", "")
+	if err != nil {
+		t.Fatalf("ensureContact erro: %v", err)
+	}
+	if id != 18 || sid != "src-18" || created {
+		t.Fatalf("id=%d sid=%q created=%v", id, sid, created)
+	}
+}

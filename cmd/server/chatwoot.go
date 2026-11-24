@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	"mime"
 	"mime/multipart"
@@ -751,8 +752,9 @@ func (c ChatwootConfig) ensureContact(chatID, phone, name, avatarURL string, alt
 			continue
 		}
 		seen[query] = true
-		res, code, e := c.req(http.MethodGet, "/contacts/search?q="+url.QueryEscape(query), nil)
+		res, code, e := c.searchContacts(query)
 		if e != nil || code != 200 {
+			slog.Default().Warn("chatwoot: busca de contato falhou", "q", query, "code", code, "err", e)
 			continue
 		}
 		for _, it := range asList(res["payload"]) {
@@ -829,6 +831,21 @@ func (c ChatwootConfig) ensureContact(chatID, phone, name, avatarURL string, alt
 		sid, _ = c.ensureContactInbox(id)
 	}
 	return id, sid, nil
+}
+
+// searchContacts busca contatos no Chatwoot. Se a busca normal der erro 5xx,
+// repete sem os contact_inboxes: um contact_inbox apontando para uma caixa já
+// apagada (resto de inbox excluída) faz o Chatwoot quebrar ao renderizar
+// (500 "undefined method 'id' for nil") — e aí o contato nunca era achado, a
+// criação dava 422 (já existe) e as mensagens acabavam descartadas na outbox.
+// Sem os contact_inboxes o source_id vem vazio e ensureContactInbox o garante.
+func (c ChatwootConfig) searchContacts(query string) (map[string]any, int, error) {
+	path := "/contacts/search?q=" + url.QueryEscape(query)
+	res, code, e := c.req(http.MethodGet, path, nil)
+	if e == nil && code >= 500 {
+		res, code, e = c.req(http.MethodGet, path+"&include_contact_inboxes=false", nil)
+	}
+	return res, code, e
 }
 
 // backfillPhone corrige o phone_number de um contato existente que estava sem

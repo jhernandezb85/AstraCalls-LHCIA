@@ -11,6 +11,14 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.6-lhcia.15
+
+- Chatwoot: si la búsqueda de contactos de Chatwoot falla con error 500 (pasa cuando un
+  contacto conserva un vínculo con una bandeja ya borrada), AstraCalls la repite sin los
+  vínculos (`include_contact_inboxes=false`) y encuentra el contacto. Antes intentaba crearlo,
+  Chatwoot respondía 422 ("ya existe") y el mensaje terminaba descartado sin llegar a Chatwoot.
+  El fallo de la búsqueda ahora queda en el log con su código.
+
 ### v1.1.6-lhcia.14
 
 - Panel: el nombre de cada número se puede cambiar (lápiz junto al nombre en la lista; Enter
@@ -122,6 +130,14 @@ Image versions of `ghcr.io/jhernandezb85/astracalls`. Format `vX.Y.Z-lhcia.N`: `
 the official AstraCalls version it's based on and `N` our own revision. `latest` points to the
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
+
+### v1.1.6-lhcia.15
+
+- Chatwoot: when Chatwoot's contact search fails with a 500 (happens when a contact keeps a
+  link to an already deleted inbox), AstraCalls retries it without the links
+  (`include_contact_inboxes=false`) and finds the contact. Before, it tried to create it,
+  Chatwoot answered 422 ("already taken") and the message ended up discarded without reaching
+  Chatwoot. Search failures are now logged with their status code.
 
 ### v1.1.6-lhcia.14
 
