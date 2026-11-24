@@ -19,7 +19,7 @@
 
 ### Qué es
 
-AstraCalls conecta números de WhatsApp (como aparato vinculado) para llamadas de voz y video
+AstraCalls conecta números de WhatsApp (como dispositivo vinculado) para llamadas de voz y video
 desde el navegador, mensajes, webhooks e integración con Chatwoot. Este fork mantiene todo eso
 y mejora la experiencia en Chatwoot para equipos de atención y ventas.
 
