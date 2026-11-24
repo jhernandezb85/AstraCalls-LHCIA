@@ -11,6 +11,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.6-lhcia.13
+
+- Atributos del anuncio con los nombres de la cuenta: `ctwa_clid` y `meta_ad_id` (los que usa
+  CAPI) y, si la cuenta los tiene creados, `anuncio_titulo`, `anuncio_origen` y
+  `anuncio_enlace`. Solo se llenan los atributos que existan en la cuenta.
+
 ### v1.1.6-lhcia.12
 
 - Chatwoot: los datos del anuncio en los atributos de la conversación pasan a ser una opción de
@@ -109,6 +115,12 @@ Image versions of `ghcr.io/jhernandezb85/astracalls`. Format `vX.Y.Z-lhcia.N`: `
 the official AstraCalls version it's based on and `N` our own revision. `latest` points to the
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
+
+### v1.1.6-lhcia.13
+
+- Ad attributes use the account's names: `ctwa_clid` and `meta_ad_id` (the ones CAPI uses)
+  and, if the account has them, `anuncio_titulo`, `anuncio_origen` and `anuncio_enlace`. Only
+  attributes that exist in the account are filled.
 
 ### v1.1.6-lhcia.12
 

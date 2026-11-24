@@ -673,8 +673,8 @@ func (s *Session) execChatwootJob(cfg ChatwootConfig, j cwJob) error {
 		}
 		// e os dados estruturados na conversa (CAPI/n8n), se a conta tiver os
 		// atributos do anúncio definidos (ver chatwoot_ads.go)
-		if cfg.adAttributesDefined() {
-			if aerr := cfg.mergeConversationAttrs(convID, adAttributes(j.Referral)); aerr != nil {
+		if attrs := cfg.accountAdAttributes(j.Referral); len(attrs) > 0 {
+			if aerr := cfg.mergeConversationAttrs(convID, attrs); aerr != nil {
 				s.log.Warn("chatwoot: atributos do anúncio falharam", "err", aerr, "conv", convID)
 			}
 		}

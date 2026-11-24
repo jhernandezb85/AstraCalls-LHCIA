@@ -11,48 +11,65 @@ import (
 
 const adAttrsCacheTTL = 10 * time.Minute
 
+// Dados do anúncio (Click to WhatsApp) nos atributos da CONVERSA do Chatwoot:
+// ficam estruturados para automações/n8n enviarem o evento ao Meta (CAPI) sem ler
+// a nota privada. É uma opção da CONTA: vale quando a conta tem o atributo
+// ctwa_clid definido (o provisioner o cria em Integrações). Só são gravados os
+// atributos que a conta tiver: ctwa_clid e meta_ad_id (os da CAPI) e, se o
+// administrador quis, anuncio_titulo, anuncio_origen e anuncio_enlace.
+
 type adAttrsState struct {
-	on bool
-	at time.Time
+	keys map[string]bool
+	at   time.Time
 }
 
 var adAttrsCache sync.Map // "<url>|<conta>" -> adAttrsState
 
-// adAttributesDefined diz se a conta tem os atributos do anúncio definidos
-// (cache: 10 min se ligado, 2 min se desligado; em erro, desligado e tenta de novo).
-func (c ChatwootConfig) adAttributesDefined() bool {
+// definedAdKeys devolve os atributos de conversa definidos na conta (cache: 10
+// min se a opção está ligada, 2 min se não; em erro, vazio e tenta de novo).
+func (c ChatwootConfig) definedAdKeys() map[string]bool {
 	key := fmt.Sprintf("%s|%d", c.URL, c.AccountID)
 	if v, ok := adAttrsCache.Load(key); ok {
 		st := v.(adAttrsState)
 		ttl := adAttrsCacheTTL
-		if !st.on {
+		if !st.keys["ctwa_clid"] {
 			ttl = 2 * time.Minute // recém-ligado na conta: percebe logo
 		}
 		if time.Since(st.at) < ttl {
-			return st.on
+			return st.keys
 		}
 	}
 	res, code, err := c.reqList(http.MethodGet, "/custom_attribute_definitions?attribute_model=conversation_attribute")
 	if err != nil || code != http.StatusOK {
-		return false
+		return nil
 	}
-	on := false
+	keys := map[string]bool{}
 	for _, it := range res {
-		if asStr(asMap(it)["attribute_key"]) == "ctwa_clid" {
-			on = true
-			break
+		if k := asStr(asMap(it)["attribute_key"]); k != "" {
+			keys[k] = true
 		}
 	}
-	adAttrsCache.Store(key, adAttrsState{on: on, at: time.Now()})
-	return on
+	adAttrsCache.Store(key, adAttrsState{keys: keys, at: time.Now()})
+	return keys
 }
 
-// Dados do anúncio (Click to WhatsApp) nos atributos da CONVERSA do Chatwoot:
-// ficam estruturados para automações/n8n enviarem o evento ao Meta (CAPI) sem ler
-// a nota privada. É uma opção da CONTA: vale quando a conta tem o atributo
-// ctwa_clid definido (o provisioner o cria em Integrações); sem ele, nada é gravado.
+// accountAdAttributes devolve os atributos do anúncio a gravar na conversa, só
+// os que a conta tiver definidos; nada se a opção estiver desligada.
+func (c ChatwootConfig) accountAdAttributes(ref map[string]any) map[string]any {
+	keys := c.definedAdKeys()
+	if !keys["ctwa_clid"] {
+		return nil
+	}
+	out := map[string]any{}
+	for k, v := range adAttributes(ref) {
+		if keys[k] {
+			out[k] = v
+		}
+	}
+	return out
+}
 
-// adAttributes extrai do referral os atributos gravados na conversa.
+// adAttributes extrai do referral todos os atributos possíveis do anúncio.
 func adAttributes(ref map[string]any) map[string]any {
 	out := map[string]any{}
 	set := func(key string, srcs ...string) {
@@ -64,10 +81,10 @@ func adAttributes(ref map[string]any) map[string]any {
 		}
 	}
 	set("ctwa_clid", "ctwaClid")
-	set("ad_id", "sourceId")
-	set("ad_title", "title")
-	set("ad_source", "utmSource", "sourceApp", "conversionSource")
-	set("ad_url", "sourceUrl")
+	set("meta_ad_id", "sourceId")
+	set("anuncio_titulo", "title")
+	set("anuncio_origen", "utmSource", "sourceApp", "conversionSource")
+	set("anuncio_enlace", "sourceUrl")
 	return out
 }
 

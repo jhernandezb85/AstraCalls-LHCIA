@@ -50,7 +50,7 @@ sigue vigente y está en [README.upstream.md](./README.upstream.md) (en portugu�
 - Nota privada con los datos del anuncio (título, descripción, enlace, ID, `ctwa_clid`).
 - Línea corta del anuncio en el primer mensaje del cliente, para que Captain sepa de qué
   producto se habla.
-- Datos del anuncio (`ctwa_clid`, `ad_id`, `ad_title`, `ad_source`, `ad_url`) en los atributos
+- Datos del anuncio (`ctwa_clid`, `meta_ad_id` y, opcionales, `anuncio_titulo`, `anuncio_origen`, `anuncio_enlace`) en los atributos
   de la conversación, para la API de conversiones de Meta (CAPI), cuando la cuenta tiene esos
   atributos creados (desde Integraciones → "Meta · API de conversiones" del provisioner).
 
@@ -137,7 +137,7 @@ applies and is in [README.upstream.md](./README.upstream.md) (in Portuguese).
 **Ads (Click to WhatsApp)**
 - Private note with the ad data (title, description, link, ID, `ctwa_clid`).
 - A short ad line on the customer's first message, so Captain knows which product it's about.
-- Ad data (`ctwa_clid`, `ad_id`, `ad_title`, `ad_source`, `ad_url`) in the conversation
+- Ad data (`ctwa_clid`, `meta_ad_id` and, optionally, `anuncio_titulo`, `anuncio_origen`, `anuncio_enlace`) in the conversation
   attributes, for Meta's Conversions API (CAPI), when the account has those attributes
   (created from the provisioner's Integrations → "Meta · API de conversiones").
 
