@@ -11,8 +11,16 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
-### v1.1.6-lhcia.15
+### v1.1.7-lhcia.1
 
+- Base actualizada a la **v1.1.7** oficial de AstraCalls (ver su `CHANGELOG.md`): nombre de
+  grupos y canales en caché (menos consultas a WhatsApp, menos riesgo de restricción),
+  "siempre en línea" apagado por defecto para que el celular siga recibiendo notificaciones
+  (botón **Opciones** por número), whatsmeow actualizado, e info de contacto con
+  `isBusiness`/`verifiedName`.
+- Origen del contacto: solo se trata como anuncio lo que trae `ctwa_clid` o `sourceType`
+  "ad". Un enlace wa.me o una búsqueda muestran su origen ("Origen: enlace de WhatsApp", etc.)
+  sin la línea "Desde el anuncio" en el mensaje y sin llenar los atributos del anuncio (CAPI).
 - Chatwoot: si la búsqueda de contactos de Chatwoot falla con error 500 (pasa cuando un
   contacto conserva un vínculo con una bandeja ya borrada), AstraCalls la repite sin los
   vínculos (`include_contact_inboxes=false`) y encuentra el contacto. Antes intentaba crearlo,
@@ -131,8 +139,15 @@ the official AstraCalls version it's based on and `N` our own revision. `latest`
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
 
-### v1.1.6-lhcia.15
+### v1.1.7-lhcia.1
 
+- Base updated to the official AstraCalls **v1.1.7** (see its `CHANGELOG.md`): cached group
+  and channel names (fewer WhatsApp queries, lower restriction risk), "always online" off by
+  default so the phone keeps getting notifications (per-number **Options** button), whatsmeow
+  update, and contact info with `isBusiness`/`verifiedName`.
+- Contact origin: only `ctwa_clid` or `sourceType` "ad" counts as an ad. A wa.me link or a
+  search shows its origin ("Origen: enlace de WhatsApp", etc.) without the "Desde el anuncio"
+  line on the message and without filling the ad attributes (CAPI).
 - Chatwoot: when Chatwoot's contact search fails with a 500 (happens when a contact keeps a
   link to an already deleted inbox), AstraCalls retries it without the links
   (`include_contact_inboxes=false`) and finds the contact. Before, it tried to create it,

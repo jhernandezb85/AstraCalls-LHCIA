@@ -60,18 +60,70 @@ func TestFormatReferralNote(t *testing.T) {
 	if !strings.Contains(note, "ARzYABCDEF123") {
 		t.Errorf("nota sem ctwa_clid: %q", note)
 	}
-	indented := formatReferralNote(map[string]any{"body": "Intro\n\n    ⚙️ Motor\n\t🏔️ Turbo"})
+	indented := formatReferralNote(map[string]any{"ctwaClid": "x", "body": "Intro\n\n    ⚙️ Motor\n\t🏔️ Turbo"})
 	if strings.Contains(indented, "\n    ") || strings.Contains(indented, "\n\t") {
 		t.Errorf("descrição com indentação vira bloco de código no Chatwoot: %q", indented)
 	}
-	line := referralLine(map[string]any{"title": "Mezcladora", "body": "\n  ¿Tu obra necesita mezclas parejas y a tiempo? 🏗️\n\nConoce la Mezcladora..."})
+	line := referralLine(map[string]any{"ctwaClid": "x", "title": "Mezcladora", "body": "\n  ¿Tu obra necesita mezclas parejas y a tiempo? 🏗️\n\nConoce la Mezcladora..."})
 	if line != "📢 _Desde el anuncio: Mezcladora — ¿Tu obra necesita mezclas parejas y a tiempo? 🏗️_\n" {
 		t.Errorf("linha do anúncio = %q", line)
 	}
 	if referralLine(nil) != "" || referralLine(map[string]any{"ctwaClid": "x"}) != "📢 _Desde un anuncio_\n" {
 		t.Error("sem anúncio: vazio; sem título/descrição: genérico")
 	}
+	if referralLine(map[string]any{"title": "Página", "entryPointSource": "click_to_chat_link"}) != "" {
+		t.Error("link wa.me não é anúncio: sem linha de anúncio")
+	}
 	if formatReferralNote(nil) != "" {
 		t.Error("referral nil deveria dar nota vazia")
+	}
+}
+
+// #202: link wa.me/busca trazem entryPointSource sem anúncio — não pode virar
+// "Contato veio de um anúncio".
+func TestFormatReferralNote_NotAd(t *testing.T) {
+	cases := map[string]string{
+		"click_to_chat_link":     "Origen: enlace de WhatsApp",
+		"phone_number_hyperlink": "Origen: enlace de número de teléfono",
+		"contact_search":         "Origen: búsqueda de contacto",
+		"global_search_new_chat": "Origen: búsqueda de WhatsApp",
+		"algo_novo":              "Origen no identificado* (algo_novo)",
+	}
+	for src, want := range cases {
+		m := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+			Text:        proto.String("oi"),
+			ContextInfo: &waE2E.ContextInfo{EntryPointConversionSource: proto.String(src)},
+		}}
+		note := formatReferralNote(messageReferral(m))
+		if strings.Contains(note, "anúncio") || strings.Contains(note, "anuncio") {
+			t.Errorf("%s: rotulado como anúncio: %q", src, note)
+		}
+		if !strings.Contains(note, want) {
+			t.Errorf("%s: esperava %q em %q", src, want, note)
+		}
+	}
+}
+
+// ExternalAdReply sem ctwa_clid nem sourceType "ad" (ex.: prévia de link de
+// outro app) e sem origem: nenhuma nota.
+func TestFormatReferralNote_ExternalReplyWithoutAd(t *testing.T) {
+	m := &waE2E.Message{ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+		Text: proto.String("veja"),
+		ContextInfo: &waE2E.ContextInfo{ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
+			Title:     proto.String("Página"),
+			SourceURL: proto.String("https://exemplo.com"),
+			SourceID:  proto.String("123"),
+		}},
+	}}
+	if note := formatReferralNote(messageReferral(m)); note != "" {
+		t.Errorf("não deveria gerar nota: %q", note)
+	}
+}
+
+// anúncio reconhecido só pelo sourceType (sem ctwa_clid) continua anúncio.
+func TestFormatReferralNote_AdBySourceType(t *testing.T) {
+	ref := map[string]any{"sourceType": "ad", "title": "Promo", "entryPointSource": "ctwa_ad"}
+	if note := formatReferralNote(ref); !strings.Contains(note, "Click to WhatsApp") {
+		t.Errorf("sourceType=ad deveria ser anúncio: %q", note)
 	}
 }

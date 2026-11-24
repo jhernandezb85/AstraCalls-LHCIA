@@ -469,8 +469,8 @@ func (s *Session) chatwootMirrorOwnGroup(cfg ChatwootConfig, evt *events.Message
 func (s *Session) groupJobTarget(group types.JID) (chatID, name, avatar string) {
 	chatID = group.String() // 1203...@g.us
 	name = chatID
-	if gi, err := s.client.GetGroupInfo(context.Background(), group); err == nil && gi.Name != "" {
-		name = gi.Name
+	if n := s.cachedGroupName(group); n != "" {
+		name = n
 	}
 	avatar = s.cachedAvatar(group)
 	return
@@ -493,8 +493,8 @@ func (s *Session) chatwootPushChannel(cfg ChatwootConfig, evt *events.Message) {
 	channel := evt.Info.Chat
 	chatID := channel.String() // ...@newsletter
 	name := chatID
-	if ni, err := s.client.GetNewsletterInfo(context.Background(), channel); err == nil && ni.ThreadMeta.Name.Text != "" {
-		name = ni.ThreadMeta.Name.Text
+	if n := s.cachedChannelName(channel); n != "" {
+		name = n
 	}
 	j := deliverContent(evt, "", false)
 	j.ChatID = chatID
@@ -527,20 +527,51 @@ type cwJob struct {
 
 func (j cwJob) hasMedia() bool { return len(j.MsgRaw) > 0 }
 
-// formatReferralNote monta a nota privada que avisa o atendente que o contato
-// chegou por um anúncio (Click to WhatsApp), com os dados de campanha. Retorna
-// "" quando não há origem de anúncio.
+// referralIsAd diz se o referral é de anúncio Click to WhatsApp. Só conta sinal
+// real de anúncio (ctwa_clid ou sourceType "ad"): link wa.me, busca e link de
+// telefone também trazem entryPointSource/ExternalAdReply e não são anúncio.
+func referralIsAd(ref map[string]any) bool {
+	clid, _ := ref["ctwaClid"].(string)
+	st, _ := ref["sourceType"].(string)
+	return clid != "" || strings.EqualFold(st, "ad")
+}
+
+// referralOriginLabels traduz o entryPointSource das origens que não são anúncio.
+var referralOriginLabels = map[string]string{
+	"click_to_chat_link":     "enlace de WhatsApp",
+	"phone_number_hyperlink": "enlace de número de teléfono",
+	"contact_search":         "búsqueda de contacto",
+	"global_search_new_chat": "búsqueda de WhatsApp",
+}
+
+// formatReferralNote monta a nota privada que avisa o atendente de onde o
+// contato veio: anúncio (Click to WhatsApp, com os dados da campanha) ou outra
+// origem (link, busca), sem afirmar anúncio. Retorna "" quando não há origem.
 func formatReferralNote(ref map[string]any) string {
 	if len(ref) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("📢 *El contacto llegó por un anuncio (Click to WhatsApp)*")
 	line := func(label, key string) {
 		if v, ok := ref[key].(string); ok && v != "" {
 			b.WriteString("\n• " + label + ": " + plainLines(v))
 		}
 	}
+	if !referralIsAd(ref) {
+		src, _ := ref["entryPointSource"].(string)
+		if src == "" {
+			return "" // sem anúncio nem origem conhecida (ex.: prévia de link)
+		}
+		if label, ok := referralOriginLabels[src]; ok {
+			b.WriteString("📍 *Origen: " + label + "*")
+		} else {
+			b.WriteString("📍 *Origen no identificado* (" + src + ")")
+		}
+		line("Origen", "utmSource")
+		line("Medio", "utmMedium")
+		return b.String()
+	}
+	b.WriteString("📢 *El contacto llegó por un anuncio (Click to WhatsApp)*")
 	line("Título", "title")
 	line("Descripción", "body")
 	line("Enlace del anuncio", "sourceUrl")
@@ -555,7 +586,7 @@ func formatReferralNote(ref map[string]any) string {
 // referralLine resume o anúncio numa linha para o balão do cliente ("" sem
 // anúncio): título e o começo da descrição.
 func referralLine(ref map[string]any) string {
-	if len(ref) == 0 {
+	if len(ref) == 0 || !referralIsAd(ref) {
 		return ""
 	}
 	title := strings.TrimSpace(asStr(ref["title"]))
@@ -1715,15 +1746,7 @@ func (s *server) handleChatwootOpenGroup(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	chatID := gid.String()
-	name := chatID
-	if gi, e := sess.client.GetGroupInfo(r.Context(), gid); e == nil && gi.Name != "" {
-		name = gi.Name
-	}
-	avatar := ""
-	if pp, perr := sess.client.GetProfilePictureInfo(r.Context(), gid, nil); perr == nil && pp != nil {
-		avatar = pp.URL
-	}
+	chatID, name, avatar := sess.groupJobTarget(gid)
 	s.openChatwootConversation(w, cfg, chatID, name, avatar)
 }
 

@@ -21,8 +21,11 @@ func TestAdAttributes(t *testing.T) {
 			t.Errorf("%s = %v, want %s", k, got[k], v)
 		}
 	}
-	if src := adAttributes(map[string]any{"sourceApp": "instagram"})["anuncio_origen"]; src != "instagram" {
+	if src := adAttributes(map[string]any{"ctwaClid": "c", "sourceApp": "instagram"})["anuncio_origen"]; src != "instagram" {
 		t.Errorf("sem utmSource usa o app de origem: %v", src)
+	}
+	if got := adAttributes(map[string]any{"title": "Página", "entryPointSource": "click_to_chat_link"}); len(got) != 0 {
+		t.Errorf("link wa.me não é anúncio, não vira atributo: %v", got)
 	}
 }
 

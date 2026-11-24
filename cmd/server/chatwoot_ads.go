@@ -72,6 +72,9 @@ func (c ChatwootConfig) accountAdAttributes(ref map[string]any) map[string]any {
 // adAttributes extrai do referral todos os atributos possíveis do anúncio.
 func adAttributes(ref map[string]any) map[string]any {
 	out := map[string]any{}
+	if !referralIsAd(ref) { // link wa.me, busca etc.: não é anúncio, não vira atributo
+		return out
+	}
 	set := func(key string, srcs ...string) {
 		for _, src := range srcs {
 			if v := strings.TrimSpace(asStr(ref[src])); v != "" {
