@@ -11,6 +11,13 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.6-lhcia.12
+
+- Chatwoot: los datos del anuncio en los atributos de la conversación pasan a ser una opción de
+  la CUENTA, no de cada bandeja: AstraCalls los llena en cualquier bandeja cuando la cuenta
+  tiene definido el atributo `ctwa_clid` (lo crea el provisioner desde Integraciones →
+  "Meta · API de conversiones"). Se quita la opción por bandeja `ad_attributes` de la `.11`.
+
 ### v1.1.6-lhcia.11
 
 - Chatwoot: opción `ad_attributes` (apagada por defecto). Con ella, cuando un cliente llega
@@ -102,6 +109,13 @@ Image versions of `ghcr.io/jhernandezb85/astracalls`. Format `vX.Y.Z-lhcia.N`: `
 the official AstraCalls version it's based on and `N` our own revision. `latest` points to the
 latest published version. To roll back, put the previous version in the compose (or the
 official `astraonline/astracalls:vX.Y.Z`).
+
+### v1.1.6-lhcia.12
+
+- Chatwoot: storing the ad data in the conversation attributes is now an ACCOUNT option, not a
+  per-inbox one: AstraCalls fills them in any inbox when the account has the `ctwa_clid`
+  attribute defined (the provisioner creates it from Integrations → "Meta · API de
+  conversiones"). The per-inbox `ad_attributes` option from `.11` is removed.
 
 ### v1.1.6-lhcia.11
 
