@@ -796,6 +796,13 @@ func (s *Session) handleEvent(rawEvt any) {
 		if evt.Name == appstate.WAPatchCriticalBlock {
 			go s.keepPresenceActive(ctx)
 		}
+		// agenda (contatos) sincronizada: libera a importação do histórico
+		if evt.Name == appstate.WAPatchCriticalUnblockLow {
+			go s.releaseImport()
+		}
+	case *events.PairSuccess:
+		// novo pareamento: a agenda virá de novo; a importação volta a esperar por ela
+		s.resetImportGate()
 	case *events.PushNameSetting:
 		// O pushname chegou (às vezes depois do Connected): reenvia a presença,
 		// pois SendPresence falha enquanto o nome não está no store.
@@ -856,9 +863,10 @@ func (s *Session) handleEvent(rawEvt any) {
 	case *events.HistorySync:
 		// conversas antigas que o WhatsApp envia ao parear: grava no histórico (base
 		// das rotas de chats e das âncoras do import sob demanda) e importa pro Chatwoot
+		// (ao parear, a importação espera a agenda — ver chatwoot_importgate.go)
 		go func() {
 			s.storeHistorySync(evt.Data)
-			s.importHistorySync(evt.Data)
+			s.historyChunk(evt.Data)
 		}()
 	case *events.GroupInfo:
 		if evt.Name != nil {

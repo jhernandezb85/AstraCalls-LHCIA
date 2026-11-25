@@ -121,13 +121,14 @@ func (s *server) handleImportHistoryNow(w http.ResponseWriter, r *http.Request) 
 // enviadas como outgoing) — o source_id = ID da msg do WhatsApp impede o reenvio
 // (o webhook ignora outgoing com source_id). A data original é prefixada no texto,
 // porque o Chatwoot carimba tudo com a hora da importação.
-func (s *Session) importHistorySync(data *waHistorySync.HistorySync) {
+// Devolve quantas conversas e mensagens foram importadas neste chunk.
+func (s *Session) importHistorySync(data *waHistorySync.HistorySync) (convs, msgs int) {
 	if data == nil {
-		return
+		return 0, 0
 	}
 	cfg := s.getChatwoot()
 	if !cfg.valid() || !cfg.ImportHistory {
-		return
+		return 0, 0
 	}
 	days := cfg.ImportHistoryDays
 	if days <= 0 {
@@ -142,13 +143,16 @@ func (s *Session) importHistorySync(data *waHistorySync.HistorySync) {
 	s.importMu.Lock()
 	defer s.importMu.Unlock()
 
-	total := 0
 	for _, conv := range data.GetConversations() {
-		total += s.importConversation(cfg, conv, cutoff)
+		if n := s.importConversation(cfg, conv, cutoff); n > 0 {
+			convs++
+			msgs += n
+		}
 	}
-	if total > 0 {
-		s.log.Info("chatwoot: histórico importado", "mensagens", total, "chunk", data.GetChunkOrder())
+	if msgs > 0 {
+		s.log.Info("chatwoot: histórico importado", "conversas", convs, "mensagens", msgs, "chunk", data.GetChunkOrder())
 	}
+	return convs, msgs
 }
 
 // importConversation importa uma conversa 1:1. Devolve quantas mensagens postou.

@@ -21,6 +21,12 @@ versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
   **resueltas** (no llenan la bandeja de abiertas y el Captain no responde mensajes viejos);
   se reabren solas cuando el contacto vuelve a escribir. Si el contacto ya tenía una
   conversación activa, se usa esa sin cambiarle el estado.
+- **La importación espera la agenda**: al vincular, WhatsApp manda el historial antes que los
+  contactos. Ahora AstraCalls guarda el historial y espera la agenda (máximo 3 minutos) antes
+  de pasarlo a Chatwoot, así los contactos nacen con su nombre. El equipo recibe avisos en la
+  conversación "AstraCalls (sistema)": "⏳ La importación ya comenzó…" y, al terminar,
+  "✅ Importación terminada: N conversaciones y M mensajes". Esa conversación de sistema
+  siempre entra abierta (el Captain no le responde).
 - **Nombres de contacto**: al vincular, WhatsApp manda el historial antes que la agenda y los
   contactos importados quedaban con el número como nombre. Ahora, cuando llega la agenda (o un
   mensaje con el nombre del perfil), AstraCalls corrige el nombre en Chatwoot. Solo cambia

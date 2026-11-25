@@ -303,7 +303,8 @@ func (s *Session) chatwootAlert(text string) {
 		s.log.Error("chatwoot: alerta — ensure contact falhou", "err", err)
 		return
 	}
-	convID, err := cfg.ensureConversation(contactID, sourceID)
+	// sempre ABERTA: é um aviso para a equipe, não um cliente (o Captain não deve responder)
+	convID, err := cfg.ensureConversationWith(contactID, sourceID, convStatusOpen)
 	if err != nil {
 		s.log.Error("chatwoot: alerta — ensure conversation falhou", "err", err)
 		return
@@ -1030,8 +1031,14 @@ func (c ChatwootConfig) ensureContactInbox(contactID int) (string, error) {
 	return asStr(res["source_id"]), nil
 }
 
-// ensureConversation reutiliza uma conversa aberta da inbox ou cria uma nova.
+// ensureConversation reutiliza uma conversa aberta da inbox ou cria uma nova, com
+// o status configurado para conversas novas (conversation_status).
 func (c ChatwootConfig) ensureConversation(contactID int, sourceID string) (int, error) {
+	return c.ensureConversationWith(contactID, sourceID, c.conversationStatus())
+}
+
+// ensureConversationWith é ensureConversation com o status de criação explícito.
+func (c ChatwootConfig) ensureConversationWith(contactID int, sourceID, status string) (int, error) {
 	if res, code, e := c.req(http.MethodGet, fmt.Sprintf("/contacts/%d/conversations", contactID), nil); e == nil && code == 200 {
 		for _, it := range asList(res["payload"]) {
 			m := asMap(it)
@@ -1043,7 +1050,7 @@ func (c ChatwootConfig) ensureConversation(contactID int, sourceID string) (int,
 			}
 		}
 	}
-	return c.createConversation(contactID, sourceID, c.conversationStatus())
+	return c.createConversation(contactID, sourceID, status)
 }
 
 func (c ChatwootConfig) createConversation(contactID int, sourceID, status string) (int, error) {
