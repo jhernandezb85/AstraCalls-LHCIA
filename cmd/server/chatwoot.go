@@ -1421,6 +1421,14 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 	if waMsgID != "" {
 		// quem respondeu, leu: tiques azuis para o contato (ver chatwoot_readreply.go)
 		go sess.markReadOnReply(jid)
+		// um humano respondeu numa conversa pendente: abre (o Captain para de responder)
+		if humanReplyOpens(body) && cwConvID != 0 {
+			go func() {
+				if err := sess.getChatwoot().setConversationStatus(cwConvID, convStatusOpen); err != nil {
+					s.log.Warn("chatwoot: abrir conversa pendente após resposta humana falhou", "err", err)
+				}
+			}()
+		}
 		if cwMsgID := asInt(body["id"]); cwMsgID != 0 {
 			go sess.setMessageSourceID(cwMsgID, waMsgID)
 			// acompanha os recibos (entregue/lida) desta mensagem do agente e marca
@@ -1457,6 +1465,16 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	// nada pra enviar (ex.: webhook sem conteúdo relevante): ok silencioso.
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// humanReplyOpens: a mensagem foi escrita por um atendente humano (sender.type
+// "user") numa conversa PENDENTE. Respostas do Captain/bots ou de automações
+// (sem remetente humano) não abrem a conversa.
+func humanReplyOpens(body map[string]any) bool {
+	if asStr(asMap(body["conversation"])["status"]) != convStatusPending {
+		return false
+	}
+	return asStr(asMap(body["sender"])["type"]) == "user"
 }
 
 // chatwootSenderName extrai o nome do atendente do webhook de saída. Retorna ""

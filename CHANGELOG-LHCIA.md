@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.3
+
+- **Responder desde el CRM abre la conversación pendiente.** Cuando un atendente humano responde en una conversación pendiente, pasa a abierta y Captain deja de responder. Las respuestas de Captain, bots o automatizaciones no la abren.
+
 ### v1.1.7-lhcia.2
 
 - **Estado de las conversaciones nuevas** (`conversation_status` en la config de Chatwoot de
