@@ -46,6 +46,11 @@ func newServer(ctx context.Context, pgURL, pgNamespace, staticDir string, maxCal
 	broker.AccountForSession = mgr.accountIDForSession
 	broker.HostForSession = mgr.hostForSession
 	broker.InboxForSession = mgr.inboxIDForSession
+	broker.OnCallEnded = func(rec CallRecord) {
+		if sess, ok := mgr.Get(rec.SessionID); ok {
+			sess.chatwootCallNote(rec)
+		}
+	}
 
 	// Gateway SIP: o PBX/softphone do cliente se registra aqui (modelo Wavoip).
 	// Endereço configurável por WACALLS_SIP_ADDR (padrão 0.0.0.0:5060).

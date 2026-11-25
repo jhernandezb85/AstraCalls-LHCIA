@@ -103,6 +103,29 @@ type ChatwootConfig struct {
 	// para todos (ver chatwoot_delete.go). "note" (padrão): mantém a mensagem e
 	// posta uma nota privada; "delete": apaga também no Chatwoot.
 	ContactDelete string `json:"contact_delete,omitempty"`
+	// ConversationStatus: status com que o AstraCalls CRIA uma conversa nova
+	// (mensagem de um contato sem conversa ativa na inbox). "open" (padrão): vai
+	// direto para os humanos. "pending": fica pendente, para o Captain/bot atender
+	// primeiro. A importação de histórico ignora este campo (ver chatwoot_history.go).
+	ConversationStatus string `json:"conversation_status,omitempty"`
+}
+
+const (
+	convStatusOpen     = "open"
+	convStatusPending  = "pending"
+	convStatusResolved = "resolved"
+)
+
+func validConversationStatus(m string) bool {
+	return m == "" || m == convStatusOpen || m == convStatusPending
+}
+
+// conversationStatus devolve o status efetivo de uma conversa nova (padrão: open).
+func (c ChatwootConfig) conversationStatus() string {
+	if c.ConversationStatus == convStatusPending {
+		return convStatusPending
+	}
+	return convStatusOpen
 }
 
 // readReceipts diz se os recibos estão ligados (padrão: sim).
@@ -348,7 +371,10 @@ func (s *Session) chatwootPushIncoming(evt *events.Message) {
 func (s *Session) chatwootMirrorOwn(cfg ChatwootConfig, evt *events.Message) {
 	chat := evt.Info.Chat // numa msg from_me 1:1, o Chat é o destinatário
 	phone, chatID, altID, _ := s.directIdentity(chat, evt.Info.RecipientAlt)
-	name := phone
+	name := s.bestContactName(chat, evt.Info.RecipientAlt)
+	if name == "" {
+		name = phone
+	}
 	if name == "" {
 		name = chat.User
 	}
@@ -368,6 +394,9 @@ func (s *Session) chatwootPushDirect(cfg ChatwootConfig, evt *events.Message) {
 	chat := evt.Info.Chat
 	phone, chatID, altID, _ := s.directIdentity(chat, evt.Info.SenderAlt)
 	name := evt.Info.PushName
+	if name == "" {
+		name = s.bestContactName(chat, evt.Info.SenderAlt)
+	}
 	if name == "" {
 		name = phone
 		if name == "" {
@@ -821,6 +850,12 @@ func (c ChatwootConfig) ensureContact(chatID, phone, name, avatarURL string, alt
 				if needPhone || needIdent || needAttr {
 					c.canonicalizeContact(id, chatID, phone, asMap(m["custom_attributes"]))
 				}
+				// nome: contatos criados antes de o WhatsApp mandar a agenda (ex.:
+				// importação logo após parear) ficam com o número como nome. Quando
+				// já sabemos o nome real, corrige — nunca troca um nome de verdade.
+				if ex := asStr(m["name"]); phone != "" && ex != "" && !isPlaceholderName(name, phone) && isPlaceholderName(ex, phone) {
+					c.updateContactName(id, name)
+				}
 				if sid := sourceIDForInbox(m, c.InboxID); sid != "" {
 					return id, sid, nil
 				}
@@ -862,6 +897,40 @@ func (c ChatwootConfig) ensureContact(chatID, phone, name, avatarURL string, alt
 		sid, _ = c.ensureContactInbox(id)
 	}
 	return id, sid, nil
+}
+
+// isPlaceholderName diz se o nome do contato é só um "tapa-buraco": vazio ou
+// apenas o telefone (com ou sem +, espaços, traços, parênteses). Um nome com
+// qualquer letra/emoji é considerado de verdade (pode ter sido digitado à mão).
+func isPlaceholderName(name, phone string) bool {
+	n := strings.TrimSpace(name)
+	if n == "" {
+		return true
+	}
+	for _, r := range n {
+		if !(r >= '0' && r <= '9') && !strings.ContainsRune("+ -()./", r) {
+			return false
+		}
+	}
+	return true
+}
+
+// updateContactName troca o nome do contato (best-effort).
+func (c ChatwootConfig) updateContactName(contactID int, name string) {
+	_, code, err := c.req(http.MethodPut, fmt.Sprintf("/contacts/%d", contactID), map[string]any{"name": name})
+	if err != nil || code >= 300 {
+		slog.Default().Warn("chatwoot: atualizar nome do contato falhou", "contact", contactID, "code", code, "err", err)
+	}
+}
+
+// bestContactName devolve o melhor nome conhecido do contato (agenda ou perfil do
+// WhatsApp) ou "" se ainda não há nenhum.
+func (s *Session) bestContactName(jids ...types.JID) string {
+	if s.client == nil || s.client.Store == nil || s.client.Store.Contacts == nil {
+		return ""
+	}
+	name, push := s.contactNames(jids...)
+	return firstNonEmptyOf(name, push)
 }
 
 // searchContacts busca contatos no Chatwoot. Se a busca normal der erro 5xx,
@@ -974,8 +1043,12 @@ func (c ChatwootConfig) ensureConversation(contactID int, sourceID string) (int,
 			}
 		}
 	}
+	return c.createConversation(contactID, sourceID, c.conversationStatus())
+}
+
+func (c ChatwootConfig) createConversation(contactID int, sourceID, status string) (int, error) {
 	body := map[string]any{
-		"source_id": sourceID, "inbox_id": c.InboxID, "contact_id": contactID, "status": "open",
+		"source_id": sourceID, "inbox_id": c.InboxID, "contact_id": contactID, "status": status,
 	}
 	res, code, e := c.req(http.MethodPost, "/conversations", body)
 	if e != nil {
@@ -985,6 +1058,49 @@ func (c ChatwootConfig) ensureConversation(contactID int, sourceID string) (int,
 		return 0, fmt.Errorf("create conversation http %d", code)
 	}
 	return asInt(res["id"]), nil
+}
+
+// ensureImportConversation escolhe a conversa onde a importação de histórico
+// posta as mensagens antigas. Reaproveita uma conversa ativa (open/pending/snoozed)
+// sem mexer no status; senão a resolvida mais recente da inbox; senão cria uma
+// ABERTA (nunca pendente: o Captain responderia mensagens velhas). resolveAfter
+// diz se, ao fim da importação, a conversa deve voltar a "resolvida" — postar uma
+// mensagem recebida reabre conversas resolvidas no Chatwoot.
+func (c ChatwootConfig) ensureImportConversation(contactID int, sourceID string) (convID int, resolveAfter bool, err error) {
+	lastResolved := 0
+	if res, code, e := c.req(http.MethodGet, fmt.Sprintf("/contacts/%d/conversations", contactID), nil); e == nil && code == 200 {
+		for _, it := range asList(res["payload"]) {
+			m := asMap(it)
+			if asInt(m["inbox_id"]) != c.InboxID {
+				continue
+			}
+			switch asStr(m["status"]) {
+			case "open", "pending", "snoozed":
+				return asInt(m["id"]), false, nil
+			case convStatusResolved:
+				if id := asInt(m["id"]); id > lastResolved {
+					lastResolved = id
+				}
+			}
+		}
+	}
+	if lastResolved != 0 {
+		return lastResolved, true, nil
+	}
+	id, err := c.createConversation(contactID, sourceID, convStatusOpen)
+	return id, err == nil, err
+}
+
+// setConversationStatus muda o status de uma conversa (open, pending, resolved).
+func (c ChatwootConfig) setConversationStatus(convID int, status string) error {
+	_, code, err := c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/toggle_status", convID), map[string]any{"status": status})
+	if err != nil {
+		return err
+	}
+	if code >= 300 {
+		return fmt.Errorf("toggle_status http %d", code)
+	}
+	return nil
 }
 
 // contentAttrs monta o content_attributes do Chatwoot a partir dos campos
@@ -1296,6 +1412,8 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 	// grava o source_id na mensagem de SAÍDA do Chatwoot (amarra citação cliente->agente)
 	cwConvID := asInt(asMap(body["conversation"])["id"])
 	if waMsgID != "" {
+		// quem respondeu, leu: tiques azuis para o contato (ver chatwoot_readreply.go)
+		go sess.markReadOnReply(jid)
 		if cwMsgID := asInt(body["id"]); cwMsgID != 0 {
 			go sess.setMessageSourceID(cwMsgID, waMsgID)
 			// acompanha os recibos (entregue/lida) desta mensagem do agente e marca
@@ -1698,6 +1816,10 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "contact_delete deve ser note ou delete"})
 		return
 	}
+	if !validConversationStatus(cfg.ConversationStatus) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation_status deve ser open ou pending"})
+		return
+	}
 	if !cfg.valid() {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "url, account_id, account_token e inbox_id são obrigatórios"})
 		return
@@ -1724,6 +1846,7 @@ func publicChatwootCfg(cfg ChatwootConfig) ChatwootConfig {
 	cfg.DeviceBotToken = ""
 	cfg.DeviceMode = cfg.deviceMode()
 	cfg.ContactDelete = cfg.contactDelete()
+	cfg.ConversationStatus = cfg.conversationStatus()
 	rr := cfg.readReceipts()
 	cfg.ReadReceipts = &rr
 	return cfg

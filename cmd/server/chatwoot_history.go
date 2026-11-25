@@ -212,6 +212,9 @@ func (s *Session) importConversation(cfg ChatwootConfig, conv *waHistorySync.Con
 	chatID := phone + "@" + types.DefaultUserServer
 	name := conv.GetName()
 	if name == "" {
+		name = s.bestContactName(jid)
+	}
+	if name == "" {
 		name = phone
 	}
 	avatar := s.cachedAvatar(jid)
@@ -220,7 +223,10 @@ func (s *Session) importConversation(cfg ChatwootConfig, conv *waHistorySync.Con
 		s.log.Error("chatwoot: histórico — ensure contact falhou", "err", err)
 		return 0
 	}
-	convID, err := cfg.ensureConversation(contactID, sourceID)
+	// conversas criadas pela importação terminam RESOLVIDAS: não lotam a inbox de
+	// abertas e o Captain não responde mensagens antigas. Reabrem sozinhas quando o
+	// contato voltar a escrever.
+	convID, resolveAfter, err := cfg.ensureImportConversation(contactID, sourceID)
 	if err != nil {
 		s.log.Error("chatwoot: histórico — ensure conversation falhou", "err", err)
 		return 0
@@ -237,6 +243,11 @@ func (s *Session) importConversation(cfg ChatwootConfig, conv *waHistorySync.Con
 		}
 		// respeita o rate-limit do Chatwoot (importações grandes)
 		time.Sleep(60 * time.Millisecond)
+	}
+	if resolveAfter {
+		if err := cfg.setConversationStatus(convID, convStatusResolved); err != nil {
+			s.log.Warn("chatwoot: histórico — resolver conversa importada falhou", "conv", convID, "err", err)
+		}
 	}
 	return posted
 }

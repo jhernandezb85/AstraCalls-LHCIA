@@ -11,6 +11,28 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.2
+
+- **Estado de las conversaciones nuevas** (`conversation_status` en la config de Chatwoot de
+  cada número): `open` (por defecto, como antes) o `pending`. Con `pending` la conversación
+  nueva queda pendiente y el **Captain** (o un bot) la atiende primero; antes AstraCalls la
+  creaba siempre abierta y el Captain nunca respondía a clientes nuevos.
+- **Importación de historial**: las conversaciones que crea la importación terminan
+  **resueltas** (no llenan la bandeja de abiertas y el Captain no responde mensajes viejos);
+  se reabren solas cuando el contacto vuelve a escribir. Si el contacto ya tenía una
+  conversación activa, se usa esa sin cambiarle el estado.
+- **Nombres de contacto**: al vincular, WhatsApp manda el historial antes que la agenda y los
+  contactos importados quedaban con el número como nombre. Ahora, cuando llega la agenda (o un
+  mensaje con el nombre del perfil), AstraCalls corrige el nombre en Chatwoot. Solo cambia
+  nombres que son únicamente el número; nunca uno escrito a mano.
+- **Leído al responder**: cuando se responde desde Chatwoot, los mensajes de ese contacto se
+  marcan como leídos en WhatsApp (el cliente ve los tiques azules). Si se responde desde el
+  celular, el propio celular ya los marca. Con "leer automáticamente" no hace falta.
+- **Nota por cada llamada**: toda llamada deja una nota privada en la conversación con la
+  dirección, el resultado y la duración ("📞 Llamada entrante · contestada · 1:23",
+  "· perdida", "· rechazada", "· sin respuesta"). La grabación, cuando la hay, sigue llegando
+  aparte con el audio.
+
 ### v1.1.7-lhcia.1
 
 - Base actualizada a la **v1.1.7** oficial de AstraCalls (ver su `CHANGELOG.md`): nombre de

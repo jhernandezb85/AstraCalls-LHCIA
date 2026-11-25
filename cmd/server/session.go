@@ -800,6 +800,10 @@ func (s *Session) handleEvent(rawEvt any) {
 		// O pushname chegou (às vezes depois do Connected): reenvia a presença,
 		// pois SendPresence falha enquanto o nome não está no store.
 		go s.keepPresenceActive(ctx)
+	case *events.Contact:
+		// agenda do celular (chega depois do histórico ao parear): corrige no
+		// Chatwoot os contatos que ficaram só com o número como nome.
+		go s.chatwootContactName(evt)
 	case *events.LoggedOut:
 		s.setAuth(AuthSnapshot{State: "logged_out", Paired: false})
 		go s.notifyDisconnected("desconectado (el celular desvinculó este dispositivo)",
@@ -847,6 +851,7 @@ func (s *Session) handleEvent(rawEvt any) {
 			}
 			go s.chatwootPushIncoming(evt)
 			s.maybeMarkRead(ctx, evt)
+			s.trackUnread(evt)
 		}
 	case *events.HistorySync:
 		// conversas antigas que o WhatsApp envia ao parear: grava no histórico (base

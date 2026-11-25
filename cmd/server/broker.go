@@ -28,6 +28,8 @@ type CallRecord struct {
 	EndedAt   *int64     `json:"endedAt,omitempty"`
 	EndReason string     `json:"endReason,omitempty"`
 	Source    string     `json:"source,omitempty"` // "sip" no modo agente; vazio = WhatsApp
+	// ConnectedAt: quando a chamada foi atendida pela 1ª vez (nil = nunca atendida).
+	ConnectedAt *int64 `json:"connectedAt,omitempty"`
 }
 
 type AuthSnapshot struct {
@@ -115,6 +117,9 @@ type Broker struct {
 	HostForSession func(sessionID string) string
 	// InboxForSession resolve a caixa (inbox) do Chatwoot da sessão (0 = nenhuma).
 	InboxForSession func(sessionID string) int
+	// OnCallEnded é chamado (em goroutine) uma vez por chamada encerrada, com o
+	// registro final. Usado para deixar a nota da chamada no Chatwoot.
+	OnCallEnded func(CallRecord)
 }
 
 func (b *Broker) scopeOf(sessionID string) (sc sessionScope) {
@@ -313,6 +318,13 @@ func (b *Broker) emitSessionQR(sessionID, qr string) {
 func (b *Broker) upsertCall(r CallRecord) {
 	b.mu.Lock()
 	cp := r
+	if old, ok := b.calls[r.CallID]; ok && old.ConnectedAt != nil && cp.ConnectedAt == nil {
+		cp.ConnectedAt = old.ConnectedAt
+	}
+	if cp.Status == StatusConnected && cp.ConnectedAt == nil {
+		now := time.Now().UnixMilli()
+		cp.ConnectedAt = &now
+	}
 	b.calls[r.CallID] = &cp
 	b.mu.Unlock()
 	b.broadcastCallList()
@@ -398,7 +410,11 @@ func (b *Broker) endCall(id, reason string) {
 	b.history = append(b.history, ended)
 	owner := c.Owner
 	sessionID := c.SessionID
+	onEnded := b.OnCallEnded
 	b.mu.Unlock()
+	if onEnded != nil {
+		go onEnded(ended)
+	}
 
 	b.broadcastForSession(sessionID, map[string]any{
 		"type": "call-ended", "sessionId": sessionID, "id": id, "owner": owner, "reason": reason, "endedAt": now,
