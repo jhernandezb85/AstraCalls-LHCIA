@@ -215,6 +215,13 @@ func (s *server) handleMCPScoped(w http.ResponseWriter, r *http.Request) {
 		s.serveMCP(w, r, mcpScope{})
 		return
 	}
+	// chave de administrador SÓ para o MCP (todas as sessões), separada da mestra:
+	// pode ser trocada sem mexer no provisioner nem em quem usa a API REST.
+	if admin := os.Getenv("WACALLS_MCP_ADMIN_KEY"); len(admin) >= 24 && key != "" &&
+		subtle.ConstantTimeCompare([]byte(key), []byte(admin)) == 1 {
+		s.serveMCP(w, r, mcpScope{})
+		return
+	}
 	if !strings.HasPrefix(key, mcpKeyPrefix) || s.sessions == nil || s.sessions.store == nil {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="astracalls-mcp"`)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "chave MCP ausente ou inválida"})

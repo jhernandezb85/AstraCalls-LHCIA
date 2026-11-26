@@ -11,6 +11,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.4
+
+- **Archivar en WhatsApp ↔ resolver en Chatwoot (espejo).** Opción por bandeja (`archive_sync`: desactivado por defecto, `resolved` o `pending`). Archivar el chat en WhatsApp resuelve la conversación (o la deja pendiente); desarchivar la reabre. Resolver en Chatwoot archiva el chat en WhatsApp y reabrir lo desarchiva. Los cambios que hace el propio AstraCalls (importación, abrir al responder, el espejo) no rebotan al otro lado, y la sincronización completa al vincular no resuelve conversaciones en masa.
+- **Bandeja eliminada en Chatwoot → sesión eliminada.** Cada 10 minutos AstraCalls revisa que la bandeja de cada sesión exista. Tras 3 respuestas seguidas de "no existe" (404) desvincula el número y borra la sesión. Solo aplica a bandejas que vio existir desde que arrancó; caídas o errores de Chatwoot nunca borran nada.
+- **Clave de administrador solo para MCP** (`WACALLS_MCP_ADMIN_KEY`, mínimo 24 caracteres): da acceso MCP a todas las sesiones sin usar la clave maestra, y se puede cambiar sin tocar el provisioner.
+
 ### v1.1.7-lhcia.3
 
 - **Responder desde el CRM abre la conversación pendiente.** Cuando un atendente humano responde en una conversación pendiente, pasa a abierta y Captain deja de responder. Las respuestas de Captain, bots o automatizaciones no la abren.

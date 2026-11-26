@@ -807,6 +807,8 @@ func (s *Session) handleEvent(rawEvt any) {
 		// O pushname chegou (às vezes depois do Connected): reenvia a presença,
 		// pois SendPresence falha enquanto o nome não está no store.
 		go s.keepPresenceActive(ctx)
+	case *events.Archive:
+		go s.chatwootArchiveEvent(evt)
 	case *events.Contact:
 		// agenda do celular (chega depois do histórico ao parear): corrige no
 		// Chatwoot os contatos que ficaram só com o número como nome.

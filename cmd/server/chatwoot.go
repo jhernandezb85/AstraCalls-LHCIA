@@ -108,6 +108,10 @@ type ChatwootConfig struct {
 	// direto para os humanos. "pending": fica pendente, para o Captain/bot atender
 	// primeiro. A importação de histórico ignora este campo (ver chatwoot_history.go).
 	ConversationStatus string `json:"conversation_status,omitempty"`
+	// ArchiveSync: espelho arquivar (WhatsApp) <-> resolver (Chatwoot), ver
+	// chatwoot_archive.go. "" (padrão): desligado. "resolved": arquivar resolve.
+	// "pending": arquivar deixa pendente.
+	ArchiveSync string `json:"archive_sync,omitempty"`
 }
 
 const (
@@ -1100,6 +1104,8 @@ func (c ChatwootConfig) ensureImportConversation(contactID int, sourceID string)
 
 // setConversationStatus muda o status de uma conversa (open, pending, resolved).
 func (c ChatwootConfig) setConversationStatus(convID int, status string) error {
+	// o webhook conversation_status_changed que volta é eco: não espelhar no WhatsApp
+	markEcho(cwStatusEchoKey(c, convID), status)
 	_, code, err := c.req(http.MethodPost, fmt.Sprintf("/conversations/%d/toggle_status", convID), map[string]any{"status": status})
 	if err != nil {
 		return err
@@ -1282,6 +1288,12 @@ func (s *server) handleChatwootWebhook(w http.ResponseWriter, r *http.Request) {
 	var body map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
+		return
+	}
+	// conversa resolvida/reaberta no Chatwoot -> arquiva/desarquiva no WhatsApp
+	if asStr(body["event"]) == "conversation_status_changed" {
+		go sess.chatwootStatusChanged(body)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	// mensagem de saída apagada no Chatwoot -> apaga para todos no WhatsApp
@@ -1844,6 +1856,13 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	if !validConversationStatus(cfg.ConversationStatus) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation_status deve ser open ou pending"})
 		return
+	}
+	if !validArchiveSync(cfg.ArchiveSync) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "archive_sync deve ser off, resolved ou pending"})
+		return
+	}
+	if cfg.ArchiveSync == "off" {
+		cfg.ArchiveSync = ""
 	}
 	if !cfg.valid() {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "url, account_id, account_token e inbox_id são obrigatórios"})
