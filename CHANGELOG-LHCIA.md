@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.12
+
+- **Diagnóstico de llamadas hechas o contestadas en el celular:** el log registra (líneas `diag llamada:`) cada señal de llamada que recibe el dispositivo vinculado y el registro de llamadas que sincroniza el celular (`CallLogAction` y `CallLogMessage`). Solo registra; no cambia el comportamiento. Sirve para corregir que la llamada siga sonando en el CRM cuando se contesta o se corta en el celular, y para dejar en Chatwoot las llamadas hechas desde el celular.
+
 ### v1.1.7-lhcia.11
 
 - **Llamada entrante: por qué número entra.** La tarjeta de Chatwoot y el aviso del panel muestran "Entra por: <cuenta> · +<número>", para saber en cuál de las líneas está sonando. El evento `incoming` trae `lineName` y `linePhone`.

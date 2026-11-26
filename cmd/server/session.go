@@ -773,6 +773,7 @@ func (s *Session) maybeMarkRead(ctx context.Context, evt *events.Message) {
 
 func (s *Session) handleEvent(rawEvt any) {
 	ctx := context.Background()
+	s.diagCallEvent(rawEvt) // diagnóstico: llamadas hechas/contestadas en el celular
 	switch evt := rawEvt.(type) {
 	case *events.Connected:
 		if id := s.client.Store.ID; id != nil {
