@@ -33,6 +33,8 @@ func callNoteText(rec CallRecord) string {
 		return head + " · contestada · " + fmtDuration(secs)
 	}
 	switch rec.EndReason {
+	case "accepted_elsewhere":
+		return head + " · contestada en el celular"
 	case "declined":
 		return head + " · rechazada"
 	case "busy":

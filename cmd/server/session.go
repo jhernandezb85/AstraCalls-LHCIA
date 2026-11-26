@@ -896,6 +896,11 @@ func (s *Session) handleEvent(rawEvt any) {
 		s.onIncomingOffer(ctx, evt)
 	case *events.CallAccept:
 		if ac, ok := s.callForEvent(evt.From, evt.Data); ok {
+			// accept vindo do NOSSO número (o celular atendeu uma chamada recebida que
+			// ainda tocava aqui): não é o cliente aceitando. Encerra só no CRM.
+			if s.isOwnJID(evt.From) && ac.cm.HandleAnsweredElsewhere() {
+				return
+			}
 			ac.cm.HandleCallAccept(ctx, wrapCall(evt.From, evt.Data), evt.From)
 		}
 	case *events.CallTransport:
@@ -904,6 +909,11 @@ func (s *Session) handleEvent(rawEvt any) {
 		}
 	case *events.CallTerminate:
 		if ac, ok := s.callForEvent(evt.From, evt.Data); ok {
+			// atendida em outro dispositivo da conta: encerra só aqui (mesmo que um
+			// accept do celular já tenha marcado a chamada como aceita)
+			if evt.Reason == string(call.EndReasonAcceptedElsewhere) && ac.cm.HandleAnsweredElsewhere() {
+				return
+			}
 			ac.cm.HandleCallTerminate(wrapCall(evt.From, evt.Data))
 		}
 	case *events.CallReject:
@@ -942,6 +952,9 @@ func (s *Session) handleUnknownCall(ctx context.Context, evt *events.UnknownCall
 	// ignorado, então a chamada nunca encerrava (ringtone preso nos atendentes e
 	// vaga presa no limite de chamadas). Agora tratamos como terminal.
 	if nodeHasTerminalCall(evt.Node) {
+		if nodeAcceptedElsewhere(evt.Node) && ac.cm.HandleAnsweredElsewhere() {
+			return
+		}
 		s.log.Info("call encerrada em outro device (terminal via UnknownCallEvent)", "call_id", callID)
 		ac.cm.HandleCallTerminate(evt.Node) // → OnEnded → broker.endCall (avisa TODOS) + removeCall
 		return

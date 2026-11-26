@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 	"time"
+
+	waBinary "go.mau.fi/whatsmeow/binary"
 )
 
 func i64(v int64) *int64 { return &v }
@@ -16,6 +18,7 @@ func TestCallNoteText(t *testing.T) {
 		{CallRecord{Direction: "outbound", ConnectedAt: i64(0), EndedAt: i64(4_500)}, "📞 Llamada saliente · contestada · 0:04"},
 		{CallRecord{Direction: "inbound", EndReason: "timeout"}, "📞 Llamada entrante · perdida"},
 		{CallRecord{Direction: "inbound", EndReason: "declined"}, "📞 Llamada entrante · rechazada"},
+		{CallRecord{Direction: "inbound", EndReason: "accepted_elsewhere"}, "📞 Llamada entrante · contestada en el celular"},
 		{CallRecord{Direction: "outbound", EndReason: "timeout"}, "📞 Llamada saliente · sin respuesta"},
 		{CallRecord{Direction: "outbound", EndReason: "busy"}, "📞 Llamada saliente · ocupado"},
 	}
@@ -61,5 +64,13 @@ func TestBrokerConnectedAtAndOnCallEnded(t *testing.T) {
 	case r := <-got:
 		t.Fatalf("OnCallEnded chamado 2x: %+v", r)
 	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestNodeAcceptedElsewhere(t *testing.T) {
+	yes := &waBinary.Node{Tag: "call", Content: []waBinary.Node{{Tag: "terminate", Attrs: waBinary.Attrs{"reason": "accepted_elsewhere"}}}}
+	no := &waBinary.Node{Tag: "call", Content: []waBinary.Node{{Tag: "terminate", Attrs: waBinary.Attrs{}}}}
+	if !nodeAcceptedElsewhere(yes) || nodeAcceptedElsewhere(no) || nodeAcceptedElsewhere(nil) {
+		t.Fatal("detecta solo terminate con reason=accepted_elsewhere")
 	}
 }

@@ -11,6 +11,11 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.16
+
+- **Llamada contestada en el celular:** al contestar en el celular, WhatsApp manda un `accept` desde el propio número y un `terminate` con `reason="accepted_elsewhere"`. Antes el `accept` se tomaba como si el cliente aceptara y el `terminate` se ignoraba, así que el CRM seguía sonando. Ahora la llamada se cierra solo en el CRM (no se envía nada a WhatsApp; la conversación sigue en el celular) y la nota dice **"📞 Llamada entrante · contestada en el celular"**.
+- Diagnóstico: `from_own` reconoce también el LID propio.
+
 ### v1.1.7-lhcia.15
 
 - **Recuperar un número desvinculado:** el plazo de 24 h de una sesión cuya bandeja se borró solo se detiene cuando el número **vuelve a vincularse** (QR o código). Cambiarle la bandeja sin escanear el QR (recuperación abandonada) ya no la salva del borrado. Lo usa el provisioner `prov-v1.0.8` ("Recuperar un número desvinculado").

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
 
@@ -70,16 +71,13 @@ func childTags(n *waBinary.Node) string {
 
 // diagCallEvent registra los eventos de llamada y el registro de llamadas.
 func (s *Session) diagCallEvent(rawEvt any) {
-	own := ""
-	if s.client != nil && s.client.Store != nil && s.client.Store.ID != nil {
-		own = s.client.Store.ID.User
-	}
-	logStanza := func(kind, from, creator, callID string, data *waBinary.Node) {
+	logStanza := func(kind string, fromJID types.JID, creator, callID string, data *waBinary.Node) {
+		from, fromOwn := fromJID.String(), s.isOwnJID(fromJID)
 		tag, attrs := nodeSummary(data)
 		_, known := s.reg.get(callID)
 		args := []any{"kind", kind, "from", from, "creator", creator,
 			"call_id", callID, "tag", tag, "attrs", attrs, "children", childTags(data),
-			"from_own", own != "" && strings.HasPrefix(from, own), "known", known}
+			"from_own", fromOwn, "known", known}
 		// La señal completa (salvo el offer, que es largo y trae claves): para
 		// comparar el terminate de "colgó el cliente" con el de "contestada en el celular".
 		if data != nil && kind != "offer" {
@@ -93,19 +91,19 @@ func (s *Session) diagCallEvent(rawEvt any) {
 	}
 	switch evt := rawEvt.(type) {
 	case *events.CallOffer:
-		logStanza("offer", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("offer", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallAccept:
-		logStanza("accept", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("accept", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallPreAccept:
-		logStanza("preaccept", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("preaccept", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallTerminate:
-		logStanza("terminate:"+evt.Reason, evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("terminate:"+evt.Reason, evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallReject:
-		logStanza("reject", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("reject", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallOfferNotice:
-		logStanza("offer_notice", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("offer_notice", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.CallRelayLatency:
-		logStanza("relaylatency", evt.From.String(), evt.CallCreator.String(), evt.CallID, evt.Data)
+		logStanza("relaylatency", evt.From, evt.CallCreator.String(), evt.CallID, evt.Data)
 	case *events.UnknownCallEvent:
 		if evt.Node != nil {
 			from := ""
@@ -149,4 +147,31 @@ func (s *Session) diagCallEvent(rawEvt any) {
 			"from_me", evt.Info.IsFromMe, "outcome", cl.GetCallOutcome().String(),
 			"duration", cl.GetDurationSecs(), "video", cl.GetIsVideo())
 	}
+}
+
+// isOwnJID: o JID é do próprio número da sessão (por número ou por LID), ou seja,
+// outro dispositivo da mesma conta (ex.: o celular).
+func (s *Session) isOwnJID(j types.JID) bool {
+	if s.client == nil || s.client.Store == nil || j.User == "" {
+		return false
+	}
+	if id := s.client.Store.ID; id != nil && id.User == j.User {
+		return true
+	}
+	return !s.client.Store.LID.IsEmpty() && s.client.Store.LID.User == j.User
+}
+
+// nodeAcceptedElsewhere: o <call> traz um <terminate reason="accepted_elsewhere">.
+func nodeAcceptedElsewhere(n *waBinary.Node) bool {
+	if n == nil {
+		return false
+	}
+	for _, c := range n.GetChildren() {
+		if c.Tag == "terminate" {
+			if r, ok := c.Attrs["reason"].(string); ok && r == "accepted_elsewhere" {
+				return true
+			}
+		}
+	}
+	return false
 }

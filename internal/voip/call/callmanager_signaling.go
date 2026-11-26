@@ -97,6 +97,33 @@ func (m *CallManager) HandleCallOffer(ctx context.Context, node *waBinary.Node, 
 	m.log.Info("incoming call", "call_id", callID, "peer", peerJid.String(), "video", isVideo, "relays", len(parsed.Relays))
 }
 
+// EndReasonAcceptedElsewhere: a chamada recebida foi atendida em outro
+// dispositivo da mesma conta (ex.: o celular), não aqui.
+const EndReasonAcceptedElsewhere core.EndCallReason = "accepted_elsewhere"
+
+// HandleAnsweredElsewhere encerra SÓ localmente uma chamada recebida que ainda
+// tocava aqui e foi atendida em outro dispositivo da conta (o celular). Não envia
+// nada ao WhatsApp: a conversa continua no outro dispositivo. Devolve true se
+// encerrou.
+func (m *CallManager) HandleAnsweredElsewhere() bool {
+	m.mu.Lock()
+	call := m.currentCall
+	if call == nil || call.Direction != core.CallDirectionIncoming || !call.CanAccept() {
+		m.mu.Unlock()
+		return false
+	}
+	_ = call.ApplyTransition(Transition{Type: TransitionTerminated, Reason: EndReasonAcceptedElsewhere})
+	ended := call
+	m.emitState()
+	m.mu.Unlock()
+	m.log.Info("incoming call answered on another device of this account", "call_id", ended.CallID)
+	if m.OnEnded != nil {
+		m.OnEnded(ended)
+	}
+	m.cleanupMedia()
+	return true
+}
+
 func (m *CallManager) HandleCallAccept(ctx context.Context, node *waBinary.Node, peerJid types.JID) {
 	m.mu.Lock()
 	call := m.currentCall
