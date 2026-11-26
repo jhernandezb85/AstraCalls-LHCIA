@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.6
+
+- Registros (logs) en cada paso del espejo archivar ↔ resolver, para diagnosticar cuando no se refleja.
+
 ### v1.1.7-lhcia.5
 
 - **Configuración global en el panel** (botón **Configurações** en la barra lateral). Primera opción: **llaves MCP de administrador**, que dan una sola conexión MCP a todos los números del servidor (con opción de solo lectura). Se crean con un clic, se muestran una vez y se guardan cifradas. Reemplaza la variable `WACALLS_MCP_ADMIN_KEY` de la lhcia.4, que ya no existe.

@@ -108,12 +108,14 @@ func (s *Session) chatwootArchiveEvent(evt *events.Archive) {
 		return
 	}
 	archived := evt.Action.GetArchived()
+	s.log.Info("whatsapp: chat (des)arquivado", "chat", jid.String(), "archived", archived)
 	aliases := []string{jid.String()}
 	if s.client != nil {
 		aliases = s.chatAliases(jid)
 	}
 	for _, alias := range aliases {
 		if takeEcho(waArchiveEchoKey(s.id, alias), fmt.Sprint(archived)) {
+			s.log.Info("whatsapp: arquivamento é eco do Chatwoot; ignorado", "chat", alias)
 			return
 		}
 	}
@@ -127,10 +129,12 @@ func (s *Session) chatwootArchiveEvent(evt *events.Archive) {
 	}
 	contactID := cfg.findContactID(chatID, phone)
 	if contactID == 0 {
+		s.log.Info("chatwoot: arquivamento sem contato no Chatwoot", "chat", chatID, "phone", phone)
 		return // sem contato no Chatwoot: nada a espelhar
 	}
 	convID, status := cfg.latestConversation(contactID)
 	if convID == 0 {
+		s.log.Info("chatwoot: arquivamento sem conversa nesta inbox", "contact", contactID)
 		return
 	}
 	target := ""
@@ -147,6 +151,7 @@ func (s *Session) chatwootArchiveEvent(evt *events.Archive) {
 		target = convStatusOpen
 	}
 	if target == "" {
+		s.log.Info("chatwoot: arquivamento sem mudança de status", "conv", convID, "status", status, "archived", archived)
 		return
 	}
 	if err := cfg.setConversationStatus(convID, target); err != nil {
@@ -224,6 +229,7 @@ func (s *Session) chatwootStatusChanged(body map[string]any) {
 	if convID == 0 {
 		return
 	}
+	s.log.Info("chatwoot: status da conversa mudou", "conv", convID, "status", status)
 	if takeEcho(cwStatusEchoKey(cfg, convID), status) {
 		return // mudança feita pelo próprio AstraCalls
 	}
@@ -238,6 +244,7 @@ func (s *Session) chatwootStatusChanged(body map[string]any) {
 	}
 	jid, ok := statusChangeChat(body)
 	if !ok {
+		s.log.Info("chatwoot: status mudou mas a conversa não tem chat do WhatsApp", "conv", convID)
 		return
 	}
 	if err := s.setWAArchive(jid, archive); err != nil {
