@@ -48,7 +48,7 @@ export const SettingsPage = () => {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+              "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
               tab === t.id ? "bg-accent font-medium text-accent-foreground" : "text-foreground/70 hover:bg-muted",
             )}
           >

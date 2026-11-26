@@ -460,13 +460,33 @@ func (b *Broker) broadcastCallList() {
 	b.mu.RUnlock()
 }
 
+// lineInfo devolve o nome e o número da sessão (a "linha" por onde a chamada entra),
+// para a tarjeta de chamada recebida mostrar em qual número está tocando.
+func (b *Broker) lineInfo(sessionID string) (name, phone string) {
+	if b.SessionsFn == nil {
+		return "", ""
+	}
+	for _, in := range b.SessionsFn() {
+		if in.ID != sessionID {
+			continue
+		}
+		jid := in.JID
+		if jid == "" {
+			jid = in.LastJID
+		}
+		return in.Name, phoneFromJIDString(jid)
+	}
+	return "", ""
+}
+
 func (b *Broker) emitIncoming(sessionID, id, peer, phone, name string, video bool) {
+	lineName, linePhone := b.lineInfo(sessionID)
 	// escopado por conta: só toca no widget da empresa dona da sessão.
 	// phone/name resolvidos (issue #9): o widget mostra o número/nome em vez do
 	// LID cru; peer segue no payload por compatibilidade.
 	b.broadcastForSession(sessionID, map[string]any{
 		"type": "incoming", "sessionId": sessionID, "id": id, "peer": peer,
-		"phone": phone, "name": name,
+		"phone": phone, "name": name, "lineName": lineName, "linePhone": linePhone,
 		"video": video, "offeredAt": time.Now().UnixMilli(), "source": "whatsapp",
 	})
 }
@@ -475,10 +495,11 @@ func (b *Broker) emitIncoming(sessionID, id, peer, phone, name string, video boo
 // mesmo formato da chamada WhatsApp (peer = phone = número do chamador) + source
 // "sip" e o bloco sip {callId, from, to, codec}.
 func (b *Broker) emitIncomingSIP(sessionID, id, phone, name string, sipInfo map[string]any) {
+	lineName, linePhone := b.lineInfo(sessionID)
 	b.broadcastForSession(sessionID, map[string]any{
 		"type": "incoming", "sessionId": sessionID, "id": id, "peer": phone,
-		"phone": phone, "name": name, "video": false, "offeredAt": time.Now().UnixMilli(),
-		"source": "sip", "sip": sipInfo,
+		"phone": phone, "name": name, "lineName": lineName, "linePhone": linePhone,
+		"video": false, "offeredAt": time.Now().UnixMilli(), "source": "sip", "sip": sipInfo,
 	})
 }
 

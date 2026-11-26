@@ -3,6 +3,8 @@ import { Phone, PhoneIncoming, PhoneOff } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useCalls } from "@/stores/calls";
+import { useSessions } from "@/stores/sessions";
+import { phoneFromJid } from "@/utils/format";
 import { useDevices } from "@/stores/devices";
 import { useAcceptCall } from "@/hooks/useAcceptCall";
 import { useRejectCall } from "@/hooks/useRejectCall";
@@ -54,6 +56,17 @@ export const IncomingCallModal = () => {
   const accept = useAcceptCall(micId);
   const reject = useRejectCall();
   const busy = accept.isPending || reject.isPending;
+  const session = useSessions((s) => s.sessions.find((x) => x.id === incoming?.sessionId));
+
+  // Quien llama: nombre · número (el servidor ya los resuelve; peer crudo solo como respaldo).
+  const callerPhone = incoming?.phone ? `+${incoming.phone}` : incoming?.peer ?? "";
+  const caller = incoming?.name ? `${incoming.name} · ${callerPhone}` : callerPhone;
+  // Línea por la que entra: del evento o, si falta, de la lista de cuentas.
+  const lineName = incoming?.lineName || session?.name || "";
+  const lineNum = incoming?.linePhone
+    ? `+${incoming.linePhone}`
+    : phoneFromJid(session?.jid ?? "") || phoneFromJid(session?.lastJid ?? "");
+  const line = [lineName, lineNum].filter(Boolean).join(" · ");
 
   useEffect(() => {
     if (!incoming) return;
@@ -74,8 +87,13 @@ export const IncomingCallModal = () => {
           <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <PhoneIncoming className="h-7 w-7" />
           </div>
-          <DialogTitle>{incoming?.video ? "Incoming video call" : "Incoming call"}</DialogTitle>
-          <DialogDescription className="truncate">{incoming?.peer}</DialogDescription>
+          <DialogTitle>{incoming?.video ? "Videollamada entrante" : "Llamada entrante"}</DialogTitle>
+          <DialogDescription className="truncate">{caller}</DialogDescription>
+          {line && (
+            <p className="mt-1 rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+              Entra por: <span className="font-medium">{line}</span>
+            </p>
+          )}
         </DialogHeader>
         <div className="mt-2 flex items-center justify-center gap-6">
           <Button
@@ -84,7 +102,7 @@ export const IncomingCallModal = () => {
             className="h-14 w-14 rounded-full"
             disabled={busy}
             onClick={() => incoming && reject.mutate({ sid: incoming.sessionId, callId: incoming.callId })}
-            aria-label="Reject"
+            aria-label="Rechazar"
           >
             <PhoneOff className="h-6 w-6" />
           </Button>
@@ -93,7 +111,7 @@ export const IncomingCallModal = () => {
             className="h-14 w-14 rounded-full"
             disabled={busy}
             onClick={() => incoming && accept.mutate({ sid: incoming.sessionId, callId: incoming.callId, video: !!incoming.video })}
-            aria-label="Accept"
+            aria-label="Contestar"
           >
             <Phone className="h-6 w-6" />
           </Button>

@@ -22,7 +22,18 @@ export type BrokerEvent =
   | { type: "call-list"; calls: CallListRow[] }
   | { type: "call-status"; sessionId: string; id: string; owner: string | null; status: CallStatus; peer: string; startedAt: number; held?: boolean }
   | { type: "call-ended"; sessionId: string; id: string; owner: string | null; reason: string; endedAt: number }
-  | { type: "incoming"; sessionId: string; id: string; peer: string; video: boolean; offeredAt: number }
+  | {
+      type: "incoming";
+      sessionId: string;
+      id: string;
+      peer: string;
+      phone?: string;
+      name?: string;
+      lineName?: string;
+      linePhone?: string;
+      video: boolean;
+      offeredAt: number;
+    }
   | { type: "incoming-claimed"; sessionId: string; id: string; owner: string }
   | { type: "call-transfer-offer"; sessionId: string; id: string; peer: string; from: string; offeredAt: number }
   | { type: "call-transfer-claimed"; sessionId: string; id: string; owner: string }

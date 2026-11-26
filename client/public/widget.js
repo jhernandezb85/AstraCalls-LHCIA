@@ -163,6 +163,7 @@
     "#wacalls-panel .cw-b{padding:22px 16px 24px;text-align:center}" +
     "#wacalls-panel .cw-name{font-weight:600;font-size:15px;color:#11181c;letter-spacing:-.01em}" +
     "#wacalls-panel .cw-sub{font-size:13px;color:#687076;margin-top:3px;font-variant-numeric:tabular-nums}" +
+    "#wacalls-panel .cw-line{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:999px;background:rgba(31,147,255,.12);color:#1f6fd1;font-size:12px}" +
     "#wacalls-panel .cw-st{font-size:12px;font-weight:500;color:#687076;margin-top:14px;min-height:16px;font-variant-numeric:tabular-nums;letter-spacing:.01em}" +
     "#wacalls-panel .cw-act{margin-top:18px;border:0;border-radius:50%;width:54px;height:54px;cursor:pointer;color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:filter .15s,transform .08s}" +
     "#wacalls-panel .cw-act:hover{filter:brightness(.95)}" +
@@ -315,6 +316,7 @@
       body =
         '<div class="cw-b"><div class="cw-name">Llamada entrante</div>' +
         '<div class="cw-sub">' + esc(state.phone) + "</div>" +
+        (state.line ? '<div class="cw-line">Entra por: <b>' + esc(state.line) + "</b></div>" : "") +
         '<div class="cw-st" id="wacalls-st">Sonando…</div>' +
         '<div class="cw-row"><button class="cw-act cw-call" id="wacalls-answer" title="Contestar">' + ICON_PHONE + "</button>" +
         '<button class="cw-act cw-mute cw-sil' + (state.silenced ? " on" : "") + '" id="wacalls-silence" title="' + (state.silenced ? "Volver a sonar" : "Silenciar el timbre (el celular sigue sonando)") + '">' + (state.silenced ? ICON_BELL : ICON_BELL_OFF) + "</button>" +
@@ -965,8 +967,10 @@
       if (incoming && incoming.callId === msg.id) return; // já tocando esta chamada
       // phone/name resolvidos pelo backend (issue #9); peer (LID cru) só como último fallback
       var incPhone = msg.phone || msg.peer || "";
-      incoming = { sessionId: msg.sessionId, callId: msg.id, peer: incPhone, name: msg.name || "", video: !!msg.video };
-      render({ incoming: true, phone: incoming.name ? incoming.name + " · " + incPhone : incPhone });
+      var line = msg.lineName || "";
+      if (msg.linePhone) line = line ? line + " · +" + msg.linePhone : "+" + msg.linePhone;
+      incoming = { sessionId: msg.sessionId, callId: msg.id, peer: incPhone, name: msg.name || "", video: !!msg.video, line: line };
+      render({ incoming: true, phone: incoming.name ? incoming.name + " · " + incPhone : incPhone, line: line });
       playRing();
       return;
     }

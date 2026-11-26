@@ -11,6 +11,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.11
+
+- **Llamada entrante: por qué número entra.** La tarjeta de Chatwoot y el aviso del panel muestran "Entra por: <cuenta> · +<número>", para saber en cuál de las líneas está sonando. El evento `incoming` trae `lineName` y `linePhone`.
+- El aviso de llamada entrante del panel ahora está en español y muestra el nombre y el número de quien llama (antes podía salir el LID crudo).
+- Configuración: la pestaña activa ya no muestra el borde de foco al hacer clic.
+
 ### v1.1.7-lhcia.10
 
 - **Página de Configuración:** el botón Configuración de la barra lateral abre una página con pestañas: **MCP** (llaves de administrador), **Números desvinculados** (cuentas cuya bandeja de Chatwoot se borró, con la cuenta atrás de 24 h antes del borrado) y **Sistema** (versión, commit, tiempo encendido, cuentas conectadas, opciones del servidor, documentación de la API y extensión Passkey).
