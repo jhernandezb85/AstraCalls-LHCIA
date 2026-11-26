@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.14
+
+- **Panel completo en español:** los diálogos técnicos (SIP/PBX, Webhooks, Proxy, Chatwoot, Formularios, Opciones), el selector de micrófono y parlante, "Otras llamadas activas" y los avisos de error de llamadas, video y passkey.
+
 ### v1.1.7-lhcia.13
 
 - **Diagnóstico de llamadas, más detalle:** las líneas `diag llamada: señal` traen todos los atributos y la señal completa (salvo el offer), para distinguir "colgó el cliente" de "contestada en el celular". Nueva línea `diag llamada: sync` con el tipo de cada sincronización que manda el celular (una por tipo y minuto).

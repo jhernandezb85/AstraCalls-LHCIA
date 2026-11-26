@@ -14,8 +14,8 @@ export const useStartCall = (sid: string, micId: string | null) =>
     },
     onError: (e: Error) => {
       const m = e.message;
-      if (m.includes("429")) toast.error("Limit reached: max concurrent calls.");
-      else if (m.includes("503")) toast.error("WhatsApp not paired.");
+      if (m.includes("429")) toast.error("Se alcanzó el límite de llamadas simultáneas.");
+      else if (m.includes("503")) toast.error("WhatsApp no está vinculado.");
       else toast.error(m);
     },
   });

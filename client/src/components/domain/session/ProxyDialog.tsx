@@ -74,7 +74,7 @@ export const ProxyDialog = ({ sid }: { sid: string }) => {
     try {
       await setProxy(sid, value);
       setEnabled(value !== "");
-      toast.success(value ? "Proxy salvo — reconectando a sessão" : "Proxy removido — reconectando");
+      toast.success(value ? "Proxy guardado, reconectando la cuenta" : "Proxy quitado, reconectando");
       setOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
@@ -86,17 +86,17 @@ export const ProxyDialog = ({ sid }: { sid: string }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={enabled ? "default" : "outline"} size="sm" title="Proxy da conexão">
+        <Button variant={enabled ? "default" : "outline"} size="sm" title="Proxy de la conexión">
           <Globe className="h-4 w-4" />
           <span className="hidden sm:inline">Proxy</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Proxy da conexão</DialogTitle>
+          <DialogTitle>Proxy de la conexión</DialogTitle>
           <DialogDescription>
-            A conexão do WhatsApp desta conta (websocket + mídia) sai por este proxy. Salvar reconecta a
-            sessão automaticamente. Deixe o host vazio para conexão direta.
+            La conexión de WhatsApp de esta cuenta (websocket + multimedia) sale por este proxy. Al guardar se
+            reconecta la cuenta sola. Deja el host vacío para conexión directa.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,10 +116,10 @@ export const ProxyDialog = ({ sid }: { sid: string }) => {
             </div>
             <div className="space-y-1">
               <Label>Host</Label>
-              <Input value={f.host} onChange={(e) => set("host")(e.target.value)} placeholder="proxy.exemplo.com" />
+              <Input value={f.host} onChange={(e) => set("host")(e.target.value)} placeholder="proxy.ejemplo.com" />
             </div>
             <div className="space-y-1">
-              <Label>Porta</Label>
+              <Label>Puerto</Label>
               <Input
                 value={f.port}
                 onChange={(e) => set("port")(e.target.value)}
@@ -130,22 +130,22 @@ export const ProxyDialog = ({ sid }: { sid: string }) => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Usuário (opcional)</Label>
+              <Label>Usuario (opcional)</Label>
               <Input
                 value={f.user}
                 onChange={(e) => set("user")(e.target.value)}
                 autoComplete="off"
-                placeholder="usuário"
+                placeholder="usuario"
               />
             </div>
             <div className="space-y-1">
-              <Label>Senha (opcional)</Label>
+              <Label>Contraseña (opcional)</Label>
               <Input
                 value={f.pass}
                 onChange={(e) => set("pass")(e.target.value)}
                 type="password"
                 autoComplete="new-password"
-                placeholder="senha"
+                placeholder="contraseña"
               />
             </div>
           </div>
@@ -154,14 +154,14 @@ export const ProxyDialog = ({ sid }: { sid: string }) => {
         <DialogFooter className="gap-2 sm:justify-between">
           {enabled ? (
             <Button variant="destructive" size="sm" disabled={busy} onClick={() => void save("")}>
-              Remover
+              Quitar
             </Button>
           ) : (
             <span />
           )}
           <Button disabled={busy} onClick={() => void save(buildProxy(f))}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Salvar
+            Guardar
           </Button>
         </DialogFooter>
       </DialogContent>

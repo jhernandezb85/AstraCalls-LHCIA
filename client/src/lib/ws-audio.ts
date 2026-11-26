@@ -95,8 +95,8 @@ export class WSAudioBridge {
         resolve();
       };
       ws.onerror = () => {
-        this.events.onError?.(new Error("WebSocket connection failed"));
-        reject(new Error("WebSocket connection failed"));
+        this.events.onError?.(new Error("No se pudo conectar el audio (WebSocket)"));
+        reject(new Error("No se pudo conectar el audio (WebSocket)"));
       };
       ws.onclose = () => {
         this.events.onState?.("disconnected");

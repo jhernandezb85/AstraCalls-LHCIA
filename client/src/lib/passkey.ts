@@ -78,7 +78,7 @@ export function runPasskeyAssertion(publicKey: WebAuthnPublicKey): Promise<WebAu
       if (d?.source === EXT && d?.type === "PASSKEY_ASSERTION_RESULT" && d?.requestId === requestId) {
         window.removeEventListener("message", onMsg);
         if (d.ok && d.assertion) resolve(d.assertion as WebAuthnAssertion);
-        else reject(new Error(d.error || "falha na asserção passkey"));
+        else reject(new Error(d.error || "falló la confirmación con passkey"));
       }
     }
     window.addEventListener("message", onMsg);

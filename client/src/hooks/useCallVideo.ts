@@ -27,7 +27,7 @@ export const useCallVideo = (call: CallSummary) => {
     try {
       await fn();
     } catch (e) {
-      toast.error((e as Error).message || "Falha na negociação de vídeo");
+      toast.error((e as Error).message || "Falló la negociación del video");
     } finally {
       setBusy(false);
     }
@@ -39,7 +39,7 @@ export const useCallVideo = (call: CallSummary) => {
       if (!conn) return;
       const ok = await conn.setLocalVideo(true);
       if (!ok) {
-        toast.error("Câmera/vídeo não suportado neste navegador");
+        toast.error("Este navegador no soporta cámara ni video");
         return;
       }
       setLocalVideoState(call.callId, true);

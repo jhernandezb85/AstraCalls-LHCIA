@@ -15,18 +15,18 @@ import { listNativeForms, type NativeFormInfo } from "@/services/sessions";
 
 // Rótulos dos campos padrão dos modelos do app (nome interno → texto).
 const FIELD_LABELS: Record<string, string> = {
-  full_name: "Nome",
-  first_name: "Nome",
-  last_name: "Sobrenome",
-  phone_number: "Telefone",
-  email: "E-mail",
-  address: "Endereço",
-  city: "Cidade",
-  zip_code: "CEP",
+  full_name: "Nombre",
+  first_name: "Nombre",
+  last_name: "Apellido",
+  phone_number: "Teléfono",
+  email: "Correo",
+  address: "Dirección",
+  city: "Ciudad",
+  zip_code: "Código postal",
 };
 
 const typeLabel = (t?: string) =>
-  t === "template" ? "Modelo" : t?.startsWith("ai_form") ? "Gerado por IA" : t || "Formulário";
+  t === "template" ? "Plantilla" : t?.startsWith("ai_form") ? "Generado por IA" : t || "Formulario";
 
 // Campos do formulário: os *_visible ligados do modelo, os custom_fields do
 // formulário de IA, ou os nomes vistos nas respostas.
@@ -44,17 +44,17 @@ const fieldsOf = (f: NativeFormInfo): string[] => {
 };
 
 const fmtDate = (ms?: number) =>
-  ms ? new Date(ms).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+  ms ? new Date(ms).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }) : "—";
 
 // Corpo pronto para POST /api/sessions/{sid}/messages/native-form.
 const sendExample = (f: NativeFormInfo) =>
   JSON.stringify(
     {
-      to: "5561999999999",
+      to: "51987654321",
       flowId: f.flowId,
       ...(f.formType && f.formType !== "template" ? { formType: f.formType } : {}),
-      body: f.body || "Compartilhe seus dados.",
-      cta: f.cta || "Preencher formulário",
+      body: f.body || "Comparte tus datos.",
+      cta: f.cta || "Llenar formulario",
       ...(f.screen ? { screen: f.screen } : {}),
       ...(f.data ? { data: f.data } : {}),
     },
@@ -70,7 +70,7 @@ const CopyButton = ({ text, label, title }: { text: string; label: string; title
       setDone(true);
       setTimeout(() => setDone(false), 1500);
     } catch {
-      toast.error("Não foi possível copiar");
+      toast.error("No se pudo copiar");
     }
   };
   return (
@@ -115,29 +115,29 @@ export const FormsDialog = ({ sid }: { sid: string }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" title="Formulários nativos do WhatsApp Business">
+        <Button variant="outline" size="sm" title="Formularios nativos de WhatsApp Business">
           <ClipboardList className="h-4 w-4" />
-          <span className="hidden sm:inline">Formulários</span>
+          <span className="hidden sm:inline">Formularios</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Formulários do WhatsApp Business</DialogTitle>
+          <DialogTitle>Formularios de WhatsApp Business</DialogTitle>
           <DialogDescription>
-            Formulários criados no app (Ferramentas comerciais → Formulários) que esta conta já enviou. Copie o
-            ID e use em <code className="font-mono">POST /messages/native-form</code>. Formulário novo aparece
-            aqui depois que você enviá-lo uma vez pelo celular.
+            Formularios creados en la app (Herramientas para la empresa → Formularios) que esta cuenta ya envió. Copia el
+            ID y úsalo en <code className="font-mono">POST /messages/native-form</code>. Un formulario nuevo aparece
+            aquí después de enviarlo una vez desde el celular.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" disabled={loading} onClick={() => void load()}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Atualizar
+            Actualizar
           </Button>
         </div>
 
-        {error && <p className="text-sm text-destructive">Erro ao carregar: {error}</p>}
+        {error && <p className="text-sm text-destructive">Error al cargar: {error}</p>}
 
         {forms === null && loading ? (
           <div className="flex justify-center py-8">
@@ -145,8 +145,8 @@ export const FormsDialog = ({ sid }: { sid: string }) => {
           </div>
         ) : forms && forms.length === 0 ? (
           <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-            Nenhum formulário ainda. No celular desta conta, crie um formulário em Ferramentas comerciais →
-            Formulários e envie para qualquer contato. Ele aparece aqui em alguns segundos.
+            Todavía no hay formularios. En el celular de esta cuenta, crea un formulario en Herramientas para la empresa →
+            Formularios y envíalo a cualquier contacto. Aparece aquí en unos segundos.
           </div>
         ) : (
           <div className="space-y-3">
@@ -156,9 +156,9 @@ export const FormsDialog = ({ sid }: { sid: string }) => {
                 <div key={f.flowId} className="space-y-2 rounded-lg border p-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate font-medium">{f.body || f.flowName || "Formulário"}</div>
+                      <div className="truncate font-medium">{f.body || f.flowName || "Formulario"}</div>
                       <div className="text-xs text-muted-foreground">
-                        Botão: {f.cta || "Preencher formulário"}
+                        Botón: {f.cta || "Llenar formulario"}
                         {f.flowName ? ` · ${f.flowName}` : ""}
                       </div>
                     </div>
@@ -168,11 +168,11 @@ export const FormsDialog = ({ sid }: { sid: string }) => {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground">ID:</span>
                     <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">{f.flowId}</code>
-                    <CopyButton text={f.flowId} label="Copiar ID" title="Copiar o flowId" />
+                    <CopyButton text={f.flowId} label="Copiar ID" title="Copiar el flowId" />
                     <CopyButton
                       text={sendExample(f)}
-                      label="Copiar envio"
-                      title="Copiar o corpo pronto para POST /messages/native-form"
+                      label="Copiar envío"
+                      title="Copiar el cuerpo listo para POST /messages/native-form"
                     />
                   </div>
 
@@ -188,7 +188,7 @@ export const FormsDialog = ({ sid }: { sid: string }) => {
 
                   <div className="text-xs text-muted-foreground">
                     Enviado {f.sentCount}× · último {fmtDate(f.lastSentAt)} · {f.responseCount}{" "}
-                    {f.responseCount === 1 ? "resposta" : "respostas"}
+                    {f.responseCount === 1 ? "respuesta" : "respuestas"}
                     {f.lastResponseAt ? ` · última ${fmtDate(f.lastResponseAt)}` : ""}
                   </div>
                 </div>

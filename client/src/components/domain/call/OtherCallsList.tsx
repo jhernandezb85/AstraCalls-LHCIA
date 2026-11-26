@@ -8,7 +8,7 @@ export const OtherCallsList = ({ calls }: { calls: CallSummary[] }) => {
   if (calls.length === 0) return null;
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-muted-foreground">Other active calls</h2>
+      <h2 className="text-sm font-medium text-muted-foreground">Otras llamadas activas</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {calls.map((c) => (
           <Card key={c.callId} className="opacity-90">

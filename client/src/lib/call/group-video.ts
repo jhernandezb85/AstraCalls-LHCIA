@@ -59,7 +59,7 @@ export class GroupVideoBridge {
       ws.binaryType = "arraybuffer";
       this.ws = ws;
       ws.onopen = () => resolve();
-      ws.onerror = () => reject(new Error("falha ao conectar o vídeo do grupo"));
+      ws.onerror = () => reject(new Error("no se pudo conectar el video del grupo"));
       ws.onclose = () => {
         if (!this.closed) this.close();
       };

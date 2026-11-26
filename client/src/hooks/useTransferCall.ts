@@ -9,6 +9,6 @@ export const useTransferCall = () =>
     mutationFn: async (vars: { sid: string; callId: string; to?: string }) => {
       await transferCall(vars.sid, vars.callId, vars.to);
     },
-    onSuccess: () => toast.success("Chamada transferida"),
+    onSuccess: () => toast.success("Llamada transferida"),
     onError: (e: Error) => toast.error(e.message),
   });

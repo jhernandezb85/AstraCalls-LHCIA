@@ -34,7 +34,7 @@ export const OptionsDialog = ({ sid }: { sid: string }) => {
     setBusy(true);
     try {
       await setOptions(sid, opts);
-      toast.success("Opções salvas");
+      toast.success("Opciones guardadas");
       setOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
@@ -46,46 +46,46 @@ export const OptionsDialog = ({ sid }: { sid: string }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" title="Opções da conta">
+        <Button variant="outline" size="sm" title="Opciones de la cuenta">
           <Settings2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Opções</span>
+          <span className="hidden sm:inline">Opciones</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Opções da conta</DialogTitle>
-          <DialogDescription>Como esta conta aparece para os contatos e para o celular.</DialogDescription>
+          <DialogTitle>Opciones de la cuenta</DialogTitle>
+          <DialogDescription>Cómo se ve esta cuenta para los contactos y en el celular.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3">
             <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Ler mensagens automaticamente</span>
+              <span className="block text-sm font-medium">Marcar mensajes como leídos automáticamente</span>
               <span className="block text-xs text-muted-foreground">
-                Marca como lida (tique azul) toda mensagem recebida. Com isso o celular não mostra a
-                mensagem como não lida.
+                Marca como leído (doble check azul) todo mensaje recibido. Así el celular no muestra el
+                mensaje como no leído.
               </span>
             </span>
             <Switch
               checked={opts.read_messages}
               onCheckedChange={set("read_messages")}
-              aria-label="Ler mensagens automaticamente"
+              aria-label="Marcar mensajes como leídos automáticamente"
             />
           </label>
 
           <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3">
             <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Sempre online</span>
+              <span className="block text-sm font-medium">Siempre en línea</span>
               <span className="block text-xs text-muted-foreground">
-                Mantém a conta aparecendo como online. Atenção: enquanto estiver online o WhatsApp{" "}
-                <b>não notifica o celular</b>. Desligado, a conta fica online só por um instante ao
-                conectar, o suficiente para o WhatsApp não desconectar o dispositivo.
+                Mantiene la cuenta como "en línea". Atención: mientras esté en línea, WhatsApp{" "}
+                <b>no notifica al celular</b>. Apagado, la cuenta sale en línea solo un instante al
+                conectar, lo justo para que WhatsApp no desvincule el dispositivo.
               </span>
             </span>
             <Switch
               checked={opts.always_online}
               onCheckedChange={set("always_online")}
-              aria-label="Sempre online"
+              aria-label="Siempre en línea"
             />
           </label>
         </div>
@@ -93,7 +93,7 @@ export const OptionsDialog = ({ sid }: { sid: string }) => {
         <DialogFooter>
           <Button disabled={busy} onClick={() => void save()}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Salvar
+            Guardar
           </Button>
         </DialogFooter>
       </DialogContent>

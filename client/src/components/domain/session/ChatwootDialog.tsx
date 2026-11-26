@@ -66,7 +66,7 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
         import_history: importHistory,
         import_history_days: Number(importDays) || 30,
       });
-      toast.success("Chatwoot conectado a esta sessão");
+      toast.success("Chatwoot conectado a esta cuenta");
       setEnabled(true);
       setOpen(false);
     } catch (e) {
@@ -107,16 +107,16 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Integração com Chatwoot</DialogTitle>
+          <DialogTitle>Integración con Chatwoot</DialogTitle>
           <DialogDescription>
-            Conecte esta sessão a uma caixa de entrada (inbox do tipo <b>API</b>) do Chatwoot.
+            Conecta esta cuenta a una bandeja de entrada (inbox de tipo <b>API</b>) de Chatwoot.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label>URL do Chatwoot</Label>
-            <Input value={form.url} onChange={set("url")} placeholder="https://chatwoot.seudominio.com" />
+            <Label>URL de Chatwoot</Label>
+            <Input value={form.url} onChange={set("url")} placeholder="https://chatwoot.tudominio.com" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -134,7 +134,7 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
               value={form.account_token}
               onChange={set("account_token")}
               type="password"
-              placeholder={enabled ? "deixe vazio p/ manter o atual" : "token do agente/admin"}
+              placeholder={enabled ? "déjalo vacío para mantener el actual" : "token del agente/admin"}
             />
           </div>
           <div className="space-y-1">
@@ -142,7 +142,7 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
             <Input value={form.inbox_identifier} onChange={set("inbox_identifier")} placeholder="abcd1234" />
           </div>
           <div className="space-y-1">
-            <Label>Webhook (cole na inbox do Chatwoot)</Label>
+            <Label>Webhook (pégalo en la inbox de Chatwoot)</Label>
             <div className="flex gap-2">
               <Input readOnly value={webhookUrl} className="text-xs" onFocus={(e) => e.target.select()} />
               <Button type="button" variant="outline" size="icon" onClick={copy} aria-label="Copiar webhook">
@@ -153,45 +153,45 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
 
           <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3">
             <span className="space-y-0.5">
-              <span className="block text-sm font-medium">Refletir mensagens enviadas pela API</span>
+              <span className="block text-sm font-medium">Reflejar los mensajes enviados por la API</span>
               <span className="block text-xs text-muted-foreground">
-                O que for disparado pela API (ex.: n8n) aparece na conversa como nota privada, igual ao
-                que é enviado pelo aparelho. Não reenvia nada ao contato.
+                Lo que se envíe por la API (ej.: n8n) aparece en la conversación como nota privada, igual que
+                lo enviado desde el celular. No reenvía nada al contacto.
               </span>
             </span>
             <Switch
               checked={mirrorApi}
               onCheckedChange={setMirrorApi}
-              aria-label="Refletir mensagens enviadas pela API"
+              aria-label="Reflejar los mensajes enviados por la API"
             />
           </label>
 
           <div className="rounded-lg border p-3">
             <label className="flex cursor-pointer items-start justify-between gap-4">
               <span className="space-y-0.5">
-                <span className="block text-sm font-medium">Importar histórico ao conectar</span>
+                <span className="block text-sm font-medium">Importar el historial al conectar</span>
                 <span className="block text-xs text-muted-foreground">
-                  Traz as conversas antigas que o WhatsApp envia ao parear, reconstruindo a timeline no
-                  Chatwoot. Ative <b>antes de conectar a conta</b> — o histórico só chega no pareamento.
+                  Trae las conversaciones antiguas que WhatsApp envía al vincular y rearma la línea de tiempo en
+                  Chatwoot. Actívalo <b>antes de conectar la cuenta</b>: el historial solo llega al vincular.
                 </span>
               </span>
               <Switch
                 checked={importHistory}
                 onCheckedChange={setImportHistory}
-                aria-label="Importar histórico ao conectar"
+                aria-label="Importar el historial al conectar"
               />
             </label>
             {importHistory && (
               <div className="mt-3 flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Importar últimos</Label>
+                <Label className="text-xs text-muted-foreground">Importar los últimos</Label>
                 <Input
                   value={importDays}
                   onChange={(e) => setImportDays(e.target.value.replace(/\D/g, ""))}
                   inputMode="numeric"
                   className="h-8 w-20"
-                  aria-label="Dias de histórico a importar"
+                  aria-label="Días de historial a importar"
                 />
-                <span className="text-xs text-muted-foreground">dias</span>
+                <span className="text-xs text-muted-foreground">días</span>
               </div>
             )}
           </div>
@@ -207,7 +207,7 @@ export const ChatwootDialog = ({ sid }: { sid: string }) => {
           )}
           <Button disabled={busy} onClick={save}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Salvar
+            Guardar
           </Button>
         </DialogFooter>
       </DialogContent>
