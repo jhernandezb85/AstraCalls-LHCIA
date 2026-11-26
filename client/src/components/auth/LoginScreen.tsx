@@ -18,13 +18,13 @@ export const LoginScreen = ({ onSuccess }: { onSuccess: () => void }) => {
     try {
       const r = await fetch(`${base}/api/config`, { headers: { "X-API-Key": key } });
       if (!r.ok) {
-        setErr(r.status === 401 ? "API key inválida" : `Erro ${r.status}`);
+        setErr(r.status === 401 ? "API key inválida" : `Error ${r.status}`);
         return;
       }
       setAuth(base, key);
       onSuccess();
     } catch {
-      setErr("Não foi possível conectar à URL informada");
+      setErr("No se pudo conectar a la URL indicada");
     } finally {
       setBusy(false);
     }
@@ -53,7 +53,7 @@ export const LoginScreen = ({ onSuccess }: { onSuccess: () => void }) => {
               onKeyDown={(e) => {
                 if (e.key === "Enter") submit();
               }}
-              placeholder="sua chave"
+              placeholder="tu clave"
             />
           </div>
           {err && <p className="text-sm text-destructive">{err}</p>}

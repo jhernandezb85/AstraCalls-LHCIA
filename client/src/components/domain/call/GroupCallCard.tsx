@@ -55,7 +55,7 @@ const VideoTile = ({
       <button
         type="button"
         onClick={() => setRot((r) => (r + 90) % 360)}
-        title="Girar câmera"
+        title="Girar cámara"
         className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white hover:bg-black/80"
       >
         <RotateCw className="h-3.5 w-3.5" />
@@ -99,11 +99,11 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
   const start = async (withVideo: boolean) => {
     const target = jid || groups?.[0]?.jid;
     if (!target) {
-      toast.error("Escolha um grupo");
+      toast.error("Elige un grupo");
       return;
     }
     if (withVideo && !GroupVideoBridge.supported()) {
-      toast.error("Seu navegador não suporta vídeo (WebCodecs)");
+      toast.error("Tu navegador no soporta video (WebCodecs)");
       return;
     }
     setStatus("calling");
@@ -130,11 +130,11 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
         await vb.connect();
         setLocalStream(vb.localStream);
       }
-      toast.success(withVideo ? "Chamada de vídeo em grupo iniciada" : "Chamada em grupo iniciada");
+      toast.success(withVideo ? "Videollamada grupal iniciada" : "Llamada grupal iniciada");
     } catch (e) {
       await cleanup();
       setStatus("idle");
-      toast.error((e as Error).message || "Falha ao iniciar a chamada em grupo");
+      toast.error((e as Error).message || "No se pudo iniciar la llamada grupal");
     }
   };
 
@@ -171,7 +171,7 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Users className="h-4 w-4" /> Chamada em grupo
+        <Users className="h-4 w-4" /> Llamada grupal
         <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6rem] uppercase text-muted-foreground">
           experimental
         </span>
@@ -184,7 +184,7 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
             onChange={(e) => setJid(e.target.value)}
             className="rounded-md border bg-background px-3 py-2 text-sm"
           >
-            <option value="">Selecione um grupo…</option>
+            <option value="">Elige un grupo…</option>
             {(groups ?? []).map((g) => (
               <option key={g.jid} value={g.jid}>
                 {g.name} ({g.participants?.length ?? 0})
@@ -193,10 +193,10 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
           </select>
           <div className="flex gap-2">
             <Button onClick={() => start(false)} className="flex-1">
-              <PhoneCall className="h-4 w-4" /> Ligar (áudio)
+              <PhoneCall className="h-4 w-4" /> Llamar (audio)
             </Button>
             <Button onClick={() => start(true)} variant="secondary" className="flex-1">
-              <Video className="h-4 w-4" /> Ligar com vídeo
+              <Video className="h-4 w-4" /> Llamar con video
             </Button>
           </div>
         </div>
@@ -210,17 +210,17 @@ export const GroupCallCard = ({ sid }: { sid: string }) => {
                 </>
               ) : (
                 <>
-                  <span className="h-2.5 w-2.5 rounded-full bg-primary" /> Em chamada de grupo
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary" /> En llamada grupal
                 </>
               )}
             </span>
             <Button variant="destructive" onClick={end}>
-              <PhoneOff className="h-4 w-4" /> Encerrar
+              <PhoneOff className="h-4 w-4" /> Terminar
             </Button>
           </div>
           {(localStream || peers.length > 0) && (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {localStream && <VideoTile stream={localStream} label="Você" muted />}
+              {localStream && <VideoTile stream={localStream} label="Tú" muted />}
               {peers.map((p) => (
                 <VideoTile key={p.pid} stream={p.stream} label={labelFor(p.pid)} orientation={p.orientation} />
               ))}

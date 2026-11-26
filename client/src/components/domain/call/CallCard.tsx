@@ -122,7 +122,7 @@ export const CallCard = ({ call }: { call: CallSummary }) => {
               <Badge variant={held ? "secondary" : statusVariant[call.status]}>
                 {formatCallDuration(call.startedAt, call.status)}
               </Badge>
-              {held && <Badge variant="muted">Em espera</Badge>}
+              {held && <Badge variant="muted">En espera</Badge>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -136,12 +136,12 @@ export const CallCard = ({ call }: { call: CallSummary }) => {
                     onClick={() =>
                       hold.mutate({ sid: call.sessionId, callId: call.callId, hold: !held })
                     }
-                    aria-label={held ? "Retomar" : "Colocar em espera"}
+                    aria-label={held ? "Reanudar" : "Poner en espera"}
                   >
                     {held ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{held ? "Retomar" : "Colocar em espera"}</TooltipContent>
+                <TooltipContent>{held ? "Reanudar" : "Poner en espera"}</TooltipContent>
               </Tooltip>
             )}
             {active && (
@@ -168,13 +168,13 @@ export const CallCard = ({ call }: { call: CallSummary }) => {
                     size="icon"
                     disabled={video.busy}
                     onClick={() => (video.state.localVideo ? video.disable() : video.enable())}
-                    aria-label={video.state.localVideo ? "Desligar vídeo" : "Ligar vídeo"}
+                    aria-label={video.state.localVideo ? "Apagar video" : "Encender video"}
                   >
                     {video.state.localVideo ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {video.state.localVideo ? "Desligar vídeo" : "Ativar vídeo"}
+                  {video.state.localVideo ? "Apagar video" : "Activar video"}
                 </TooltipContent>
               </Tooltip>
             )}
@@ -184,31 +184,31 @@ export const CallCard = ({ call }: { call: CallSummary }) => {
                   variant="destructive"
                   size="icon"
                   onClick={() => endCall.mutate({ sid: call.sessionId, callId: call.callId })}
-                  aria-label="End call"
+                  aria-label="Terminar llamada"
                 >
                   <PhoneOff className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Encerrar</TooltipContent>
+              <TooltipContent>Terminar</TooltipContent>
             </Tooltip>
           </div>
         </div>
 
         {video.state.upgradeIncoming && (
           <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2">
-            <p className="text-sm">O cliente quer ativar o vídeo.</p>
+            <p className="text-sm">El cliente quiere activar el video.</p>
             <div className="flex gap-2">
               <Button size="sm" disabled={video.busy} onClick={() => video.accept()}>
-                Aceitar
+                Aceptar
               </Button>
               <Button size="sm" variant="outline" disabled={video.busy} onClick={() => video.reject()}>
-                Recusar
+                Rechazar
               </Button>
             </div>
           </div>
         )}
         {video.state.upgradeOutgoing && !video.state.peerVideo && (
-          <p className="text-xs text-muted-foreground">Aguardando o cliente aceitar o vídeo…</p>
+          <p className="text-xs text-muted-foreground">Esperando que el cliente acepte el video…</p>
         )}
 
         {showVideo && (
@@ -226,7 +226,7 @@ export const CallCard = ({ call }: { call: CallSummary }) => {
               <button
                 type="button"
                 onClick={() => setManualRot((r) => (r + 90) % 360)}
-                title="Girar vídeo"
+                title="Girar video"
                 className="absolute right-2 top-2 rounded bg-black/60 p-1 text-white hover:bg-black/80"
               >
                 <RotateCw className="h-4 w-4" />

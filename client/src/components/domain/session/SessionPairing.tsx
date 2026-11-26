@@ -57,47 +57,47 @@ const PasskeyStep = ({ session }: { session: SessionInfo }) => {
         <KeyRound className="h-7 w-7" />
       </div>
       <div>
-        <p className="font-semibold">Esta conta usa passkey</p>
+        <p className="font-semibold">Esta cuenta usa passkey</p>
         <p className="text-sm text-muted-foreground">
-          O WhatsApp exige uma confirmação de segurança do dono da conta para conectar.
+          WhatsApp pide una confirmación de seguridad del dueño de la cuenta para conectar.
         </p>
       </div>
 
       {hasExt === false ? (
         <div className="space-y-3">
-          <Badge variant="destructive">Extensão AstraCalls Passkey não encontrada</Badge>
+          <Badge variant="destructive">No se encontró la extensión AstraCalls Passkey</Badge>
           <p className="text-sm text-muted-foreground">
-            Instale a extensão no navegador do dono da conta para autorizar a conexão:
+            Instala la extensión en el navegador del dueño de la cuenta para autorizar la conexión:
           </p>
           <ol className="mx-auto max-w-xs space-y-1 text-left text-sm text-muted-foreground">
-            <li>1. Baixe e descompacte o arquivo abaixo</li>
+            <li>1. Descarga y descomprime el archivo de abajo</li>
             <li>
-              2. Abra <code className="rounded bg-muted px-1">chrome://extensions</code> e ative o
-              <b> Modo do desenvolvedor</b>
+              2. Abre <code className="rounded bg-muted px-1">chrome://extensions</code> y activa el
+              <b> Modo de desarrollador</b>
             </li>
-            <li>3. Clique em <b>Carregar sem compactação</b> e escolha a pasta</li>
-            <li>4. Volte aqui e reative a conexão</li>
+            <li>3. Haz clic en <b>Cargar descomprimida</b> y elige la carpeta</li>
+            <li>4. Vuelve aquí y reactiva la conexión</li>
           </ol>
           <Button asChild>
             <a href={EXTENSION_DOWNLOAD_URL} download>
-              Baixar extensão (.zip)
+              Descargar extensión (.zip)
             </a>
           </Button>
         </div>
       ) : status === "running" ? (
         <Badge variant="muted" className="gap-1.5">
-          <Loader2 className="h-3 w-3 animate-spin" /> Aguardando confirmação na aba do WhatsApp…
+          <Loader2 className="h-3 w-3 animate-spin" /> Esperando la confirmación en la pestaña de WhatsApp…
         </Badge>
       ) : status === "error" ? (
         <div className="space-y-3">
-          <Badge variant="destructive">Falha: {error}</Badge>
+          <Badge variant="destructive">Error: {error}</Badge>
           <Button onClick={() => void authorize()} className="gap-1.5">
-            <ShieldCheck className="h-4 w-4" /> Tentar novamente
+            <ShieldCheck className="h-4 w-4" /> Intentar de nuevo
           </Button>
         </div>
       ) : (
         <Button onClick={() => void authorize()} className="gap-1.5">
-          <ShieldCheck className="h-4 w-4" /> Confirmar com passkey
+          <ShieldCheck className="h-4 w-4" /> Confirmar con passkey
         </Button>
       )}
     </div>
@@ -134,29 +134,29 @@ const CodeStep = ({ session }: { session: SessionInfo }) => {
       {code ? (
         <>
           <p className="text-sm text-muted-foreground">
-            No WhatsApp do número, abra <b>Aparelhos conectados → Conectar aparelho →
-            Conectar com número de telefone</b> e digite:
+            En el WhatsApp del número, abre <b>Dispositivos vinculados → Vincular un dispositivo →
+            Vincular con el número de teléfono</b> y escribe:
           </p>
           <div className="rounded-xl border bg-muted/50 px-6 py-4">
             <span className="font-mono text-3xl font-bold tracking-[0.25em]">{pretty}</span>
           </div>
           <Badge variant="muted" className="gap-1.5">
-            <Loader2 className="h-3 w-3 animate-spin" /> Aguardando confirmação no aparelho…
+            <Loader2 className="h-3 w-3 animate-spin" /> Esperando la confirmación en el celular…
           </Badge>
           <Button variant="ghost" size="sm" onClick={() => void generate()} disabled={status === "loading"}>
-            Gerar novo código
+            Generar un código nuevo
           </Button>
         </>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Informe o número com DDI e DDD (ex.: <code className="rounded bg-muted px-1">5511999999999</code>)
-            para receber um código de conexão.
+            Escribe el número con código de país (ej.: <code className="rounded bg-muted px-1">51987654321</code>)
+            para recibir un código de vinculación.
           </p>
           <Input
             type="tel"
             inputMode="numeric"
-            placeholder="5511999999999"
+            placeholder="51987654321"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onKeyDown={(e) => {
@@ -164,15 +164,15 @@ const CodeStep = ({ session }: { session: SessionInfo }) => {
             }}
             className="text-center"
           />
-          {status === "error" && <Badge variant="destructive">Falha: {error}</Badge>}
+          {status === "error" && <Badge variant="destructive">Error: {error}</Badge>}
           <Button onClick={() => void generate()} disabled={!canSubmit} className="w-full gap-1.5">
             {status === "loading" ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Gerando…
+                <Loader2 className="h-4 w-4 animate-spin" /> Generando…
               </>
             ) : (
               <>
-                <Smartphone className="h-4 w-4" /> Gerar código
+                <Smartphone className="h-4 w-4" /> Generar código
               </>
             )}
           </Button>
@@ -197,7 +197,7 @@ export const SessionPairing = ({ session }: { session: SessionInfo }) => {
           <CardTitle>Conectar {session.name}</CardTitle>
           {!isPasskey && mode === "qr" && (
             <CardDescription>
-              Abra o WhatsApp → Aparelhos conectados → Conectar aparelho e escaneie.
+              Abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea.
             </CardDescription>
           )}
         </CardHeader>
@@ -215,7 +215,7 @@ export const SessionPairing = ({ session }: { session: SessionInfo }) => {
                     mode === "qr" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <QrCode className="h-4 w-4" /> QR Code
+                  <QrCode className="h-4 w-4" /> Código QR
                 </button>
                 <button
                   type="button"
@@ -235,12 +235,12 @@ export const SessionPairing = ({ session }: { session: SessionInfo }) => {
                   <QRCodeSVG value={qr} size={232} marginSize={1} />
                 </div>
               ) : session.state === "logged_out" ? (
-                <Badge variant="destructive">Desconectado — use Reativar acima para gerar um QR</Badge>
+                <Badge variant="destructive">Desconectado: usa Reactivar arriba para generar un QR</Badge>
               ) : (
                 <>
                   <Skeleton className="h-[258px] w-[258px] rounded-lg" />
                   <Badge variant="muted" className="gap-1.5">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Aguardando QR…
+                    <Loader2 className="h-3 w-3 animate-spin" /> Esperando el QR…
                   </Badge>
                 </>
               )}

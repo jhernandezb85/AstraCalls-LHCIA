@@ -31,8 +31,8 @@ export const App = () => {
         {sessions.length === 0 ? (
           <EmptyState
             icon={<PlusCircle className="h-6 w-6" />}
-            title="Nenhuma conta ainda"
-            description="Crie sua primeira conta de WhatsApp na barra lateral para começar a ligar."
+            title="Todavía no hay cuentas"
+            description="Crea tu primera cuenta de WhatsApp en la barra lateral para empezar a llamar."
           />
         ) : active ? (
           <div className="space-y-6">
@@ -40,7 +40,7 @@ export const App = () => {
             {active.paired ? <CallsPage sid={active.id} /> : <SessionPairing session={active} />}
           </div>
         ) : (
-          <EmptyState title="Selecione uma conta" description="Escolha uma conta na barra lateral." />
+          <EmptyState title="Elige una cuenta" description="Selecciona una cuenta en la barra lateral." />
         )}
       </AppShell>
       <IncomingCallModal />

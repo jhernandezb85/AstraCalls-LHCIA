@@ -70,17 +70,17 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
           <img src="/logoCalls.png" alt="AstraCalls" className="h-7 w-auto select-none" draggable={false} />
         </span>
         {version && (
-          <span className="font-mono text-[0.6rem] leading-none text-muted-foreground" title={commit ? `commit ${commit}` : "Versão rodando"}>
+          <span className="font-mono text-[0.6rem] leading-none text-muted-foreground" title={commit ? `commit ${commit}` : "Versión en uso"}>
             {version}
           </span>
         )}
       </div>
       <Button className="w-full" onClick={onNew} disabled={creating}>
         {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        Nova conta
+        Nueva cuenta
       </Button>
       <p className="px-3 pb-1 pt-4 text-[0.68rem] font-semibold uppercase tracking-wider text-muted-foreground">
-        Contas
+        Cuentas
       </p>
       <div className="flex-1 space-y-1 overflow-y-auto pr-0.5">
         {sessions.map((s) => (
@@ -107,7 +107,7 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
                   autoFocus
                   maxLength={60}
                   value={editing.name}
-                  aria-label="Nome da conta"
+                  aria-label="Nombre de la cuenta"
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) => setEditing({ id: s.id, name: e.target.value })}
                   onKeyDown={(e) => {
@@ -133,8 +133,8 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
                 setEditing({ id: s.id, name: s.name });
               }}
               className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-              aria-label={`Renomear ${s.name}`}
-              title="Renomear"
+              aria-label={`Renombrar ${s.name}`}
+              title="Renombrar"
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -144,14 +144,14 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
                 setToDelete(s);
               }}
               className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
-              aria-label={`Excluir ${s.name}`}
+              aria-label={`Eliminar ${s.name}`}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
         {sessions.length === 0 && (
-          <p className="px-3 py-2 text-sm text-muted-foreground">Nenhuma conta ainda.</p>
+          <p className="px-3 py-2 text-sm text-muted-foreground">Todavía no hay cuentas.</p>
         )}
       </div>
 
@@ -160,18 +160,18 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
         href={EXTENSION_DOWNLOAD_URL}
         download
         className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        title="Necessária apenas para conectar contas protegidas por passkey"
+        title="Solo hace falta para conectar cuentas protegidas con passkey"
       >
         <KeyRound className="h-3.5 w-3.5 shrink-0" />
-        Extensão Passkey (.zip)
+        Extensión Passkey (.zip)
       </a>
 
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Excluir conta?"
-        description={toDelete ? `${toDelete.name} será desconectada e removida.` : undefined}
-        confirmLabel="Excluir"
+        title="¿Eliminar la cuenta?"
+        description={toDelete ? `${toDelete.name} se desconectará y se eliminará.` : undefined}
+        confirmLabel="Eliminar"
         destructive
         onConfirm={() => {
           if (toDelete) void remove(toDelete.id);

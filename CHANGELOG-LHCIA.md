@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.9
+
+- **Panel en español (lo más usado):** barra lateral, encabezado de la sesión, vinculación por QR o código, tarjetas de llamada (individual y grupal), marcador, historial, inicio de sesión, ventana MCP y Configuración general. Pendiente: los diálogos técnicos (SIP, Webhook, Proxy, Chatwoot, Formularios, Opciones).
+
 ### v1.1.7-lhcia.8
 
 - **MCP en español:** las instrucciones, los nombres y descripciones de las herramientas, sus parámetros y los mensajes de error que lee la IA.

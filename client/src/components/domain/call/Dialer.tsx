@@ -21,7 +21,7 @@ export const Dialer = ({ sid }: { sid: string }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Discador</CardTitle>
+        <CardTitle>Marcador</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <DeviceSelector />
@@ -32,7 +32,7 @@ export const Dialer = ({ sid }: { sid: string }) => {
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
             }}
-            placeholder="+55 11 99999 9999"
+            placeholder="+51 987 654 321"
             inputMode="tel"
             className="min-w-0 flex-1"
           />
@@ -44,15 +44,15 @@ export const Dialer = ({ sid }: { sid: string }) => {
             aria-pressed={video}
           >
             <Video className="h-4 w-4" />
-            Vídeo
+            Video
           </Button>
           <Button onClick={submit} disabled={startCall.isPending || !phone.trim()}>
             <Phone className="h-4 w-4" />
-            {startCall.isPending ? "Ligando…" : "Ligar"}
+            {startCall.isPending ? "Llamando…" : "Llamar"}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Você pode fazer várias ligações ao mesmo tempo — disque outro número e uma nova chamada aparece abaixo.
+          Puedes hacer varias llamadas a la vez: marca otro número y aparece una llamada nueva abajo.
         </p>
       </CardContent>
     </Card>

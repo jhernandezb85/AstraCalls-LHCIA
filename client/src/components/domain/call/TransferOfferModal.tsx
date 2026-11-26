@@ -25,7 +25,7 @@ export const TransferOfferModal = () => {
           <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <PhoneForwarded className="h-7 w-7" />
           </div>
-          <DialogTitle>Chamada transferida</DialogTitle>
+          <DialogTitle>Llamada transferida</DialogTitle>
           <DialogDescription className="truncate">{offer?.peer}</DialogDescription>
         </DialogHeader>
         <div className="mt-2 flex items-center justify-center gap-6">
@@ -35,7 +35,7 @@ export const TransferOfferModal = () => {
             className="h-14 w-14 rounded-full"
             disabled={pickup.isPending}
             onClick={() => clearTransferOffer()}
-            aria-label="Dispensar"
+            aria-label="Descartar"
           >
             <X className="h-6 w-6" />
           </Button>
@@ -44,7 +44,7 @@ export const TransferOfferModal = () => {
             className="h-14 w-14 rounded-full"
             disabled={pickup.isPending}
             onClick={() => offer && pickup.mutate({ sid: offer.sessionId, callId: offer.callId })}
-            aria-label="Atender"
+            aria-label="Contestar"
           >
             <Phone className="h-6 w-6" />
           </Button>

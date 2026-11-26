@@ -27,12 +27,12 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             <div className="flex min-w-0 items-center gap-2">
               <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="md:hidden" aria-label="Contas">
+                  <Button variant="outline" size="icon" className="md:hidden" aria-label="Cuentas">
                     <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 border-0 p-0">
-                  <SheetTitle className="sr-only">Contas</SheetTitle>
+                  <SheetTitle className="sr-only">Cuentas</SheetTitle>
                   <Sidebar onNavigate={() => setMobileOpen(false)} />
                 </SheetContent>
               </Sheet>
@@ -40,10 +40,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 <img src="/logoCalls.png" alt="AstraCalls" className="h-6 w-auto select-none" draggable={false} />
               </span>
               <h1 className="hidden truncate text-2xl font-bold tracking-tight text-foreground md:block">
-                Chamadas
+                Llamadas
               </h1>
               {version && (
-                <span className="font-mono text-[0.6rem] leading-none text-muted-foreground md:hidden" title={commit ? `commit ${commit}` : "Versão rodando"}>
+                <span className="font-mono text-[0.6rem] leading-none text-muted-foreground md:hidden" title={commit ? `commit ${commit}` : "Versión en uso"}>
                   {version}
                 </span>
               )}
@@ -54,8 +54,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                   href="/api-docs.html"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Documentação da API"
-                  title="Documentação da API"
+                  aria-label="Documentación de la API"
+                  title="Documentación de la API"
                 >
                   <BookOpen className="h-4 w-4" />
                 </a>
@@ -66,8 +66,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                   variant="outline"
                   size="icon"
                   className="rounded-full"
-                  aria-label="Sair"
-                  title="Sair"
+                  aria-label="Salir"
+                  title="Salir"
                   onClick={() => {
                     clearAuth();
                     location.reload();

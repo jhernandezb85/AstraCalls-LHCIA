@@ -17,10 +17,10 @@ import type { SessionInfo, SessionState } from "@/types/session";
 
 const statusLabel: Record<SessionState, string> = {
   open: "Conectado",
-  qr: "Ler QR",
+  qr: "Escanear QR",
   connecting: "Conectando…",
   logged_out: "Desconectado",
-  pairing_code: "Código de pareamento",
+  pairing_code: "Código de vinculación",
   passkey_request: "Confirmar passkey",
 };
 
@@ -44,7 +44,7 @@ export const SessionHeader = ({ session }: { session: SessionInfo }) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Não foi possível copiar");
+      toast.error("No se pudo copiar");
     }
   };
 
@@ -86,7 +86,7 @@ export const SessionHeader = ({ session }: { session: SessionInfo }) => {
             <span className="font-medium text-foreground">{connectedPhone}</span>
           </div>
         ) : lastPhone ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Último número que esteve conectado">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Último número que estuvo conectado">
             <Phone className="h-3.5 w-3.5" />
             <span>Último número: <span className="font-medium">{lastPhone}</span></span>
           </div>
@@ -94,7 +94,7 @@ export const SessionHeader = ({ session }: { session: SessionInfo }) => {
         <button
           type="button"
           onClick={copyId}
-          title="Copiar ID da sessão (use na API)"
+          title="Copiar el ID de la sesión (para usar en la API)"
           className="flex w-fit items-center gap-1.5 rounded-md text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <span className="font-medium">ID:</span>
@@ -106,12 +106,12 @@ export const SessionHeader = ({ session }: { session: SessionInfo }) => {
         {session.paired && (
           <label className="mr-1 flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
             <Mic className="h-4 w-4" />
-            <span className="hidden sm:inline">Gravar</span>
+            <span className="hidden sm:inline">Grabar</span>
             <Switch
               checked={session.recording}
               onCheckedChange={toggleRecording}
               disabled={recBusy}
-              aria-label="Gravar chamadas desta conta"
+              aria-label="Grabar las llamadas de esta cuenta"
             />
           </label>
         )}
@@ -134,9 +134,9 @@ export const SessionHeader = ({ session }: { session: SessionInfo }) => {
             <span className="hidden sm:inline">Desconectar</span>
           </Button>
         ) : (
-          <Button size="sm" disabled={busy} title="Reativar" onClick={() => run(() => pairSession(session.id))}>
+          <Button size="sm" disabled={busy} title="Reactivar" onClick={() => run(() => pairSession(session.id))}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-            <span className="hidden sm:inline">Reativar</span>
+            <span className="hidden sm:inline">Reactivar</span>
           </Button>
         )}
       </div>

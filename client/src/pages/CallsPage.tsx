@@ -25,7 +25,7 @@ export const CallsPage = ({ sid }: { sid: string }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">
-          {mine.length} {mine.length === 1 ? "chamada ativa" : "chamadas ativas"}
+          {mine.length} {mine.length === 1 ? "llamada activa" : "llamadas activas"}
         </h2>
         <HistoryDrawer sid={sid} />
       </div>
@@ -40,8 +40,8 @@ export const CallsPage = ({ sid }: { sid: string }) => {
       ) : (
         <EmptyState
           icon={<PhoneCall className="h-6 w-6" />}
-          title="Nenhuma chamada ativa"
-          description="Disque um número acima para iniciar uma chamada."
+          title="No hay llamadas activas"
+          description="Marca un número arriba para iniciar una llamada."
         />
       )}
       <OtherCallsList calls={others} />

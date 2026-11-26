@@ -20,7 +20,7 @@ export const phoneFromJid = (jid: string): string => {
 };
 
 export const formatCallDuration = (startedAt: number, status: CallStatus): string => {
-  if (status !== "connected") return status;
+  if (status !== "connected") return ({ starting: "Iniciando…", ringing: "Sonando…", ended: "Terminada" } as Record<string, string>)[status] ?? status;
   const s = Math.floor((Date.now() - startedAt) / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 };
