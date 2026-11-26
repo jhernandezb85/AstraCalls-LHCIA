@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { CallsPage } from "@/pages/CallsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 import { SessionPairing } from "@/components/domain/session/SessionPairing";
 import { SessionHeader } from "@/components/domain/session/SessionHeader";
 import { IncomingCallModal } from "@/components/domain/call/IncomingCallModal";
@@ -12,11 +13,13 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ensureSessionsWired, useSessions } from "@/stores/sessions";
 import { ensureCallsWired } from "@/stores/calls";
 import { useTheme } from "@/stores/theme";
+import { useView } from "@/stores/view";
 
 export const App = () => {
   const sessions = useSessions((s) => s.sessions);
   const activeId = useSessions((s) => s.activeId);
   const theme = useTheme((s) => s.theme);
+  const view = useView((s) => s.view);
 
   useEffect(() => {
     ensureSessionsWired();
@@ -28,7 +31,9 @@ export const App = () => {
   return (
     <TooltipProvider delayDuration={200}>
       <AppShell>
-        {sessions.length === 0 ? (
+        {view === "settings" ? (
+          <SettingsPage />
+        ) : sessions.length === 0 ? (
           <EmptyState
             icon={<PlusCircle className="h-6 w-6" />}
             title="Todavía no hay cuentas"

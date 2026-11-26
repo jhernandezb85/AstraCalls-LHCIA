@@ -551,6 +551,8 @@ func (s *server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		"commit":  commit,
 		// Chamada em grupo (experimental) habilitada nesta instância.
 		"groupCalls": groupCallsEnabled(),
+		// Inicio del proceso (ms): la pestaña Sistema muestra cuánto lleva encendido.
+		"startedAt": processStart.UnixMilli(),
 	}
 	// IP público anunciado no WebRTC/SIP e de onde veio (env, interface, stun:…,
 	// http:…) — diagnóstico do WACALLS_PUBLIC_IP=auto.

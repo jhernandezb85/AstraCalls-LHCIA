@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Bot, Loader2, Plus, Trash2, ArrowLeft, Copy, Check, KeyRound, Settings } from "lucide-react";
+import { Bot, Loader2, Plus, Trash2, ArrowLeft, Copy, Check, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -8,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,8 +28,8 @@ import {
 const fmtDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }) : "nunca";
 
-// Campo somente leitura com botão de copiar.
-const CopyField = ({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) => {
+// Campo de solo lectura con botón de copiar.
+export const CopyField = ({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) => {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -60,10 +59,9 @@ const CopyField = ({ label, value, multiline }: { label: string; value: string; 
 
 type View = "list" | "new" | "created";
 
-// Sem sid = Configurações gerais: chaves MCP de administrador (todas as sessões).
-export const McpDialog = ({ sid, className }: { sid?: string; className?: string }) => {
+// Gestión de llaves MCP. Sin sid = llaves de administrador (todas las cuentas).
+export const McpKeys = ({ sid, onCount }: { sid?: string; onCount?: (n: number) => void }) => {
   const admin = !sid;
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [keys, setKeys] = useState<McpKey[]>([]);
   const [max, setMax] = useState(20);
@@ -78,21 +76,16 @@ export const McpDialog = ({ sid, className }: { sid?: string; className?: string
         .then((r) => {
           setKeys(r.keys ?? []);
           setMax(r.max || 20);
+          onCount?.((r.keys ?? []).length);
         })
         .catch(() => {}),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [sid, admin],
   );
 
   useEffect(() => {
     load();
-  }, [load, open]);
-
-  useEffect(() => {
-    if (!open) {
-      setView("list");
-      setCreated(null);
-    }
-  }, [open]);
+  }, [load]);
 
   const startNew = () => {
     setName("");
@@ -129,17 +122,87 @@ export const McpDialog = ({ sid, className }: { sid?: string; className?: string
     }
   };
 
-  const list = (
-    <div className="space-y-3">
-      {admin && (
+  if (view === "new") {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm font-semibold">{admin ? "Nueva llave de administrador" : "Nueva llave MCP"}</p>
         <div className="space-y-1">
-          <p className="text-sm font-semibold">Llave MCP de administrador</p>
-          <p className="text-xs text-muted-foreground">
-            Una sola conexión MCP para todas las cuentas (números) de este servidor: el agente elige el número en cada acción.
-            Usa solo lectura para analizar conversaciones sin riesgo de enviar nada.
-          </p>
+          <Label>Nombre</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej.: Claude de ventas, n8n" />
         </div>
-      )}
+        <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3">
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">Solo lectura</span>
+            <span className="block text-xs text-muted-foreground">
+              El agente puede leer conversaciones, buscar mensajes y consultar contactos y grupos, pero no envía ni cambia nada.
+            </span>
+          </span>
+          <Switch checked={readOnly} onCheckedChange={setReadOnly} aria-label="Solo lectura" />
+        </label>
+        <p className="text-xs text-muted-foreground">
+          {admin
+            ? "La llave da acceso a TODOS los números de este servidor, incluida la API completa (api_request). Guárdala como la clave maestra."
+            : "La llave solo da acceso a este número. No permite vincular, desconectar ni tocar webhooks, Chatwoot o SIP."}
+        </p>
+        <div className="flex flex-wrap justify-between gap-2 pt-1">
+          <Button variant="outline" disabled={busy} onClick={() => setView("list")}>
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
+          <Button disabled={busy} onClick={create}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Crear llave
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "created" && created) {
+    return (
+      <div className="min-w-0 space-y-4">
+        <p className="text-sm font-semibold">Llave creada</p>
+        <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
+          Cópiala ahora: la llave no se volverá a mostrar. Si la pierdes, revócala y crea otra.
+        </p>
+        <CopyField label="URL completa (claude.ai, ChatGPT y clientes que solo piden la URL)" value={created.url} />
+        <CopyField label="Dirección MCP" value={created.endpoint} />
+        <CopyField label="Llave (Authorization: Bearer)" value={created.secret} />
+        <CopyField
+          label="Claude Code"
+          multiline
+          value={`claude mcp add --transport http astracalls ${created.endpoint} \\\n  --header "Authorization: Bearer ${created.secret}"`}
+        />
+        <CopyField
+          label="Claude Desktop, Cursor, VS Code (mcpServers)"
+          multiline
+          value={JSON.stringify(
+            {
+              mcpServers: {
+                astracalls: {
+                  type: "http",
+                  url: created.endpoint,
+                  headers: { Authorization: `Bearer ${created.secret}` },
+                },
+              },
+            },
+            null,
+            2,
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          En n8n: herramienta <strong>MCP Client</strong> del agente de IA, con la dirección de arriba y autenticación Bearer.
+        </p>
+        <div className="flex justify-end">
+          <Button onClick={() => setView("list")}>Listo</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
       {keys.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
           {admin
@@ -164,141 +227,47 @@ export const McpDialog = ({ sid, className }: { sid?: string; className?: string
           </Button>
         </div>
       ))}
-    </div>
-  );
-
-  const form = (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <Label>Nombre</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej.: Claude de ventas, n8n" />
-      </div>
-      <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3">
-        <span className="space-y-0.5">
-          <span className="block text-sm font-medium">Solo lectura</span>
-          <span className="block text-xs text-muted-foreground">
-            El agente puede leer conversaciones, buscar mensajes y consultar contactos y grupos, pero no envía ni cambia nada.
-          </span>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <span className="text-xs text-muted-foreground">
+          {keys.length}/{max}
         </span>
-        <Switch checked={readOnly} onCheckedChange={setReadOnly} aria-label="Solo lectura" />
-      </label>
-      <p className="text-xs text-muted-foreground">
-        {admin
-          ? "La llave da acceso a TODOS los números de este servidor, incluida la API completa (api_request). Guárdala como la clave maestra."
-          : "La llave solo da acceso a este número. No permite vincular, desconectar ni tocar webhooks, Chatwoot o SIP."}
-      </p>
+        <Button disabled={busy || keys.length >= max} onClick={startNew}>
+          <Plus className="h-4 w-4" />
+          Nueva llave
+        </Button>
+      </div>
     </div>
   );
+};
 
-  const createdView = created && (
-    <div className="min-w-0 space-y-4">
-      <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-        <KeyRound className="mt-0.5 h-4 w-4 shrink-0" />
-        Cópiala ahora: la llave no se volverá a mostrar. Si la pierdes, revócala y crea otra.
-      </p>
-      <CopyField label="URL completa (claude.ai, ChatGPT y clientes que solo piden la URL)" value={created.url} />
-      <CopyField label="Dirección MCP" value={created.endpoint} />
-      <CopyField label="Llave (Authorization: Bearer)" value={created.secret} />
-      <CopyField
-        label="Claude Code"
-        multiline
-        value={`claude mcp add --transport http astracalls ${created.endpoint} \\\n  --header "Authorization: Bearer ${created.secret}"`}
-      />
-      <CopyField
-        label="Claude Desktop, Cursor, VS Code (mcpServers)"
-        multiline
-        value={JSON.stringify(
-          {
-            mcpServers: {
-              astracalls: {
-                type: "http",
-                url: created.endpoint,
-                headers: { Authorization: `Bearer ${created.secret}` },
-              },
-            },
-          },
-          null,
-          2,
-        )}
-      />
-      <p className="text-xs text-muted-foreground">
-        En n8n: herramienta <strong>MCP Client</strong> del agente de IA, con la dirección de arriba y autenticación Bearer.
-      </p>
-    </div>
-  );
+// Botón + diálogo MCP de una cuenta.
+export const McpDialog = ({ sid }: { sid: string }) => {
+  const [open, setOpen] = useState(false);
+  const [count, setCount] = useState(0);
 
-  const title =
-    view === "list"
-      ? admin
-        ? "Configuración general"
-        : "MCP — agentes de IA"
-      : view === "new"
-        ? admin
-          ? "Nueva llave de administrador"
-          : "Nueva llave MCP"
-        : "Llave creada";
+  useEffect(() => {
+    listMcpKeys(sid)
+      .then((r) => setCount((r.keys ?? []).length))
+      .catch(() => {});
+  }, [sid]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {admin ? (
-          <button
-            className={
-              className ??
-              "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            }
-            title="Configuración general de AstraCalls"
-          >
-            <Settings className="h-3.5 w-3.5 shrink-0" />
-            Configuración
-          </button>
-        ) : (
-          <Button variant={keys.length ? "default" : "outline"} size="sm" title="MCP (agentes de IA)">
-            <Bot className="h-4 w-4" />
-            <span className="hidden sm:inline">MCP{keys.length > 1 ? ` (${keys.length})` : ""}</span>
-          </Button>
-        )}
+        <Button variant={count ? "default" : "outline"} size="sm" title="MCP (agentes de IA)">
+          <Bot className="h-4 w-4" />
+          <span className="hidden sm:inline">MCP{count > 1 ? ` (${count})` : ""}</span>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto [&>*]:min-w-0">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>MCP — agentes de IA</DialogTitle>
           <DialogDescription>
-            {admin
-              ? "Opciones que valen para todo AstraCalls."
-              : "Conecta Claude, ChatGPT, Cursor, n8n y otros agentes de IA a este número por MCP: envían mensajes, leen conversaciones, hacen llamadas y gestionan grupos."}
+            Conecta Claude, ChatGPT, Cursor, n8n y otros agentes de IA a este número por MCP: envían mensajes, leen
+            conversaciones, hacen llamadas y gestionan grupos.
           </DialogDescription>
         </DialogHeader>
-
-        {view === "list" ? list : view === "new" ? form : createdView}
-
-        <DialogFooter className="gap-2 sm:justify-between">
-          {view === "list" ? (
-            <>
-              <span className="self-center text-xs text-muted-foreground">
-                {keys.length}/{max}
-              </span>
-              <Button disabled={busy || keys.length >= max} onClick={startNew}>
-                <Plus className="h-4 w-4" />
-                Nueva llave
-              </Button>
-            </>
-          ) : view === "new" ? (
-            <>
-              <Button variant="outline" disabled={busy} onClick={() => setView("list")}>
-                <ArrowLeft className="h-4 w-4" />
-                Volver
-              </Button>
-              <Button disabled={busy} onClick={create}>
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Crear llave
-              </Button>
-            </>
-          ) : (
-            <Button className="sm:ml-auto" onClick={() => setView("list")}>
-              Listo
-            </Button>
-          )}
-        </DialogFooter>
+        {open && <McpKeys sid={sid} onCount={setCount} />}
       </DialogContent>
     </Dialog>
   );

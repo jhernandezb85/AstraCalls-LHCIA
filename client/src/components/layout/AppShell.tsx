@@ -6,10 +6,12 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Sidebar } from "./Sidebar";
 import { ThemeToggle } from "./ThemeToggle";
 import { useVersion } from "@/hooks/useVersion";
+import { useView } from "@/stores/view";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { label: version, commit } = useVersion();
+  const view = useView((s) => s.view);
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4">
@@ -40,7 +42,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 <img src="/logoCalls.png" alt="AstraCalls" className="h-6 w-auto select-none" draggable={false} />
               </span>
               <h1 className="hidden truncate text-2xl font-bold tracking-tight text-foreground md:block">
-                Llamadas
+                {view === "settings" ? "Configuración" : "Llamadas"}
               </h1>
               {version && (
                 <span className="font-mono text-[0.6rem] leading-none text-muted-foreground md:hidden" title={commit ? `commit ${commit}` : "Versión en uso"}>

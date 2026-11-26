@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Loader2, Plus, Trash2, KeyRound, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { McpDialog } from "@/components/domain/session/McpDialog";
 import { setActiveSession, useSessions } from "@/stores/sessions";
 import { createSession, deleteSession, renameSession } from "@/services/sessions";
-import { EXTENSION_DOWNLOAD_URL } from "@/lib/passkey";
+import { showSession, showSettings, useView } from "@/stores/view";
 import { phoneFromJid } from "@/utils/format";
 import { useVersion } from "@/hooks/useVersion";
 import type { SessionInfo, SessionState } from "@/types/session";
@@ -24,6 +23,7 @@ const dotClass: Record<SessionState, string> = {
 export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const sessions = useSessions((s) => s.sessions);
   const activeId = useSessions((s) => s.activeId);
+  const view = useView((s) => s.view);
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<SessionInfo | null>(null);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
@@ -34,6 +34,7 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
     try {
       const { id } = await createSession("WhatsApp");
       setActiveSession(id);
+      showSession();
       onNavigate?.();
     } catch (e) {
       toast.error((e as Error).message);
@@ -90,11 +91,12 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
             tabIndex={0}
             onClick={() => {
               setActiveSession(s.id);
+              showSession();
               onNavigate?.();
             }}
             className={cn(
               "group flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors",
-              s.id === activeId
+              view === "session" && s.id === activeId
                 ? "bg-accent font-medium text-accent-foreground"
                 : "text-foreground/70 hover:bg-muted",
             )}
@@ -155,16 +157,20 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
         )}
       </div>
 
-      <McpDialog />
-      <a
-        href={EXTENSION_DOWNLOAD_URL}
-        download
-        className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        title="Solo hace falta para conectar cuentas protegidas con passkey"
+      <button
+        onClick={() => {
+          showSettings();
+          onNavigate?.();
+        }}
+        className={cn(
+          "mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors",
+          view === "settings" ? "bg-accent font-medium text-accent-foreground" : "text-foreground/70 hover:bg-muted",
+        )}
+        title="Configuración general de AstraCalls"
       >
-        <KeyRound className="h-3.5 w-3.5 shrink-0" />
-        Extensión Passkey (.zip)
-      </a>
+        <Settings className="h-4 w-4 shrink-0" />
+        Configuración
+      </button>
 
       <ConfirmDialog
         open={!!toDelete}

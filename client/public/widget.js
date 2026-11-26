@@ -129,7 +129,7 @@
     }
     await new Promise(function (resolve, reject) {
       ws.onopen = function () { resolve(); };
-      ws.onerror = function () { reject(new Error("ws audio failed")); };
+      ws.onerror = function () { reject(new Error("no se pudo conectar el audio")); };
       ws.onmessage = function (ev) { if (ev.data instanceof ArrayBuffer) playPCM(ev.data); };
     });
     ws.onclose = function () { if (!closed && onClose) onClose(); };
@@ -263,36 +263,36 @@
   function render(state) {
     var p = panel();
     var head =
-      '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Chamada</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
+      '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Llamada</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
     var body = "";
     if (state.loading) {
-      body = '<div class="cw-b"><div class="cw-sub">Identificando contato…</div></div>';
+      body = '<div class="cw-b"><div class="cw-sub">Identificando el contacto…</div></div>';
     } else if (state.warn) {
       body =
         '<div class="cw-b"><div class="cw-warn">' + ICON_WARN + "</div>" +
-        '<div class="cw-name">Caixa sem WhatsApp</div>' +
+        '<div class="cw-name">Bandeja sin WhatsApp</div>' +
         '<div class="cw-sub" style="margin-top:6px;line-height:1.45">' + esc(state.warn) + "</div></div>";
     } else if (state.error) {
       body = '<div class="cw-b"><div class="cw-sub" style="color:#e5484d">' + state.error + "</div></div>";
     } else if (state.inGroupCall) {
-      head = '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Chamada em grupo</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
+      head = '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Llamada grupal</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
       body =
         '<div class="cw-b"><div class="cw-name">' + esc(state.name) + "</div>" +
-        '<div class="cw-sub">Grupo do WhatsApp</div>' +
+        '<div class="cw-sub">Grupo de WhatsApp</div>' +
         '<div class="cw-tiles" id="wacalls-tiles" style="display:none"></div>' +
         '<div class="cw-st" id="wacalls-st">' + (state.status || "") + "</div>" +
-        '<div class="cw-row"><button class="cw-act cw-mute" id="wacalls-mute" title="Mudo">' + ICON_MIC + "</button>" +
-        (state.video ? '<button class="cw-act cw-mute cw-cam on" id="wacalls-cam" title="Desligar vídeo">' + ICON_VIDEO + "</button>" : "") +
-        '<button class="cw-act cw-hang" id="wacalls-hang" title="Encerrar">' + ICON_PHONE_OFF + "</button></div></div>";
+        '<div class="cw-row"><button class="cw-act cw-mute" id="wacalls-mute" title="Silenciar micrófono">' + ICON_MIC + "</button>" +
+        (state.video ? '<button class="cw-act cw-mute cw-cam on" id="wacalls-cam" title="Apagar video">' + ICON_VIDEO + "</button>" : "") +
+        '<button class="cw-act cw-hang" id="wacalls-hang" title="Terminar">' + ICON_PHONE_OFF + "</button></div></div>";
     } else if (state.group) {
-      head = '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Chamada em grupo</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
+      head = '<div class="cw-h"><span class="cw-dot"></span><span class="cw-h-t">Llamada grupal</span><span class="cw-x" id="wacalls-close">&times;</span></div>';
       body =
         '<div class="cw-b"><div class="cw-name">' + esc(state.name) + "</div>" +
-        '<div class="cw-sub">Grupo do WhatsApp · ligar para todos os membros</div>' +
+        '<div class="cw-sub">Grupo de WhatsApp · llamar a todos los miembros</div>' +
         (state.groupCalls
-          ? '<div class="cw-row2"><button class="cw-act cw-call" id="wacalls-start-group" title="Ligar para o grupo (áudio)">' + ICON_PHONE + "</button>" +
-            '<button class="cw-act cw-grp" id="wacalls-start-group-video" title="Ligar para o grupo com vídeo">' + ICON_VIDEO + "</button></div>"
-          : '<div class="cw-st">Chamada em grupo desligada nesta instância (WACALLS_GROUP_CALLS).</div>') +
+          ? '<div class="cw-row2"><button class="cw-act cw-call" id="wacalls-start-group" title="Llamar al grupo (audio)">' + ICON_PHONE + "</button>" +
+            '<button class="cw-act cw-grp" id="wacalls-start-group-video" title="Llamar al grupo con video">' + ICON_VIDEO + "</button></div>"
+          : '<div class="cw-st">Las llamadas grupales están desactivadas en este servidor (WACALLS_GROUP_CALLS).</div>') +
         "</div>";
     } else if (state.inCall) {
       body =
@@ -301,30 +301,30 @@
         '<div class="cw-video" id="wacalls-video" style="display:none">' +
         '<video class="cw-remote-v" id="wacalls-remote-v" autoplay playsinline></video>' +
         '<video class="cw-local-v" id="wacalls-local-v" autoplay playsinline muted style="display:none"></video>' +
-        '<button type="button" class="cw-rot" id="wacalls-rot" title="Girar vídeo">' + ICON_ROTATE + "</button></div>" +
+        '<button type="button" class="cw-rot" id="wacalls-rot" title="Girar video">' + ICON_ROTATE + "</button></div>" +
         '<div class="cw-st" id="wacalls-st">' + (state.status || "") + "</div>" +
-        '<div class="cw-row"><button class="cw-act cw-mute" id="wacalls-mute" title="Mudo">' + ICON_MIC + "</button>" +
-        '<button class="cw-act cw-mute cw-cam" id="wacalls-cam" title="Ativar vídeo">' + ICON_VIDEO_OFF + "</button>" +
-        '<button class="cw-act cw-hang" id="wacalls-hang" title="Encerrar">' + ICON_PHONE_OFF + "</button></div>" +
-        '<div class="cw-vol" title="Volume do interlocutor">' + ICON_VOLUME +
+        '<div class="cw-row"><button class="cw-act cw-mute" id="wacalls-mute" title="Silenciar micrófono">' + ICON_MIC + "</button>" +
+        '<button class="cw-act cw-mute cw-cam" id="wacalls-cam" title="Activar video">' + ICON_VIDEO_OFF + "</button>" +
+        '<button class="cw-act cw-hang" id="wacalls-hang" title="Terminar">' + ICON_PHONE_OFF + "</button></div>" +
+        '<div class="cw-vol" title="Volumen del cliente">' + ICON_VOLUME +
         '<input type="range" id="wacalls-vol" min="0" max="200" step="5" value="' + volumePct + '">' +
         '<span id="wacalls-vol-pct">' + volumePct + "%</span></div>" +
-        '<div class="cw-badge" id="wacalls-spy">' + ICON_EAR + " Supervisor ouvindo a chamada</div>" +
+        '<div class="cw-badge" id="wacalls-spy">' + ICON_EAR + " Un supervisor está escuchando la llamada</div>" +
         '<audio id="wacalls-audio" autoplay></audio></div>';
     } else if (state.incoming) {
       body =
-        '<div class="cw-b"><div class="cw-name">Chamada recebida</div>' +
+        '<div class="cw-b"><div class="cw-name">Llamada entrante</div>' +
         '<div class="cw-sub">' + esc(state.phone) + "</div>" +
-        '<div class="cw-st" id="wacalls-st">Tocando…</div>' +
-        '<div class="cw-row"><button class="cw-act cw-call" id="wacalls-answer" title="Atender">' + ICON_PHONE + "</button>" +
-        '<button class="cw-act cw-mute cw-sil' + (state.silenced ? " on" : "") + '" id="wacalls-silence" title="' + (state.silenced ? "Voltar a tocar" : "Silenciar toque (o celular continua tocando)") + '">' + (state.silenced ? ICON_BELL : ICON_BELL_OFF) + "</button>" +
-        '<button class="cw-act cw-hang" id="wacalls-reject" title="Recusar">' + ICON_PHONE_OFF + "</button></div>" +
+        '<div class="cw-st" id="wacalls-st">Sonando…</div>' +
+        '<div class="cw-row"><button class="cw-act cw-call" id="wacalls-answer" title="Contestar">' + ICON_PHONE + "</button>" +
+        '<button class="cw-act cw-mute cw-sil' + (state.silenced ? " on" : "") + '" id="wacalls-silence" title="' + (state.silenced ? "Volver a sonar" : "Silenciar el timbre (el celular sigue sonando)") + '">' + (state.silenced ? ICON_BELL : ICON_BELL_OFF) + "</button>" +
+        '<button class="cw-act cw-hang" id="wacalls-reject" title="Rechazar">' + ICON_PHONE_OFF + "</button></div>" +
         '<audio id="wacalls-audio" autoplay></audio></div>';
     } else {
       body =
         '<div class="cw-b"><div class="cw-name">' + esc(state.name) + "</div>" +
         '<div class="cw-sub">' + esc(state.phone) + "</div>" +
-        '<button class="cw-act cw-call" id="wacalls-start" title="Ligar">' + ICON_PHONE + "</button></div>";
+        '<button class="cw-act cw-call" id="wacalls-start" title="Llamar">' + ICON_PHONE + "</button></div>";
     }
     p.innerHTML = head + body;
     p.classList.toggle("cw-wide", !!(state.inGroupCall && state.video));
@@ -400,10 +400,10 @@
     if (b) {
       b.classList.toggle("on", on);
       b.innerHTML = on ? ICON_BELL : ICON_BELL_OFF;
-      b.title = on ? "Voltar a tocar" : "Silenciar toque (o celular continua tocando)";
+      b.title = on ? "Volver a sonar" : "Silenciar el timbre (el celular sigue sonando)";
     }
     var st = document.getElementById("wacalls-st");
-    if (st) st.textContent = on ? "Tocando (silenciado aqui)…" : "Tocando…";
+    if (st) st.textContent = on ? "Sonando (silenciado aquí)…" : "Sonando…";
   }
 
   function updateSpyBadge() {
@@ -627,7 +627,7 @@
     };
     await new Promise(function (resolve, reject) {
       ws.onopen = function () { resolve(); };
-      ws.onerror = function () { reject(new Error("falha ao conectar o vídeo do grupo")); };
+      ws.onerror = function () { reject(new Error("no se pudo conectar el video del grupo")); };
     });
     ws.onclose = function () { if (!closed && api_onclose) api_onclose(); };
     var api_onclose = null;
@@ -647,7 +647,7 @@
       var v = document.createElement("video");
       v.autoplay = true; v.playsInline = true; v.muted = true;
       v.srcObject = cam;
-      d.appendChild(v); d.appendChild(el("span", "cw-lbl", "Você"));
+      d.appendChild(v); d.appendChild(el("span", "cw-lbl", "Tú"));
       var c = tilesEl();
       if (c) { c.appendChild(d); c.style.display = "grid"; }
       v.play().catch(function () {});
@@ -708,11 +708,11 @@
       call.gv.setCam(call.localVideo);
       btn.innerHTML = call.localVideo ? ICON_VIDEO : ICON_VIDEO_OFF;
       btn.classList.toggle("on", call.localVideo);
-      btn.title = call.localVideo ? "Desligar vídeo" : "Ligar vídeo";
+      btn.title = call.localVideo ? "Apagar video" : "Encender video";
       return;
     }
     if (!call || !call.video) return;
-    if (call.ws) { setStatus("Vídeo indisponível (áudio via WebSocket)"); return; } // WS é áudio-only
+    if (call.ws) { setStatus("Video no disponible (audio por WebSocket)"); return; } // WS é áudio-only
     if (call.localVideo) {
       api("/api/sessions/" + call.session + "/calls/" + call.callId + "/video/stop", { method: "POST", body: {} }).catch(function () {});
       call.video.stopSender();
@@ -722,7 +722,7 @@
       updateVideoUI();
       return;
     }
-    if (!videoSupported()) { setStatus("Vídeo não suportado neste navegador"); return; }
+    if (!videoSupported()) { setStatus("Este navegador no soporta video"); return; }
     try {
       var cam = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: VIDEO.W }, height: { ideal: VIDEO.H }, frameRate: { ideal: VIDEO.FPS } },
@@ -734,7 +734,7 @@
       updateVideoUI();
       await api("/api/sessions/" + call.session + "/calls/" + call.callId + "/video/request", { method: "POST", body: {} });
     } catch (e) {
-      setStatus("Erro na câmera: " + (e.message || e));
+      setStatus("Error de la cámara: " + (e.message || e));
     }
   }
 
@@ -767,7 +767,7 @@
     if (cam) {
       cam.innerHTML = call.localVideo ? ICON_VIDEO : ICON_VIDEO_OFF;
       cam.classList.toggle("on", call.localVideo);
-      cam.title = call.localVideo ? "Desligar vídeo" : "Ativar vídeo";
+      cam.title = call.localVideo ? "Apagar video" : "Activar video";
     }
   }
 
@@ -807,16 +807,16 @@
         pc.onconnectionstatechange = function () {
           // NÃO usar a conexão do navegador como "atendida" — ela conecta na hora
           // (navegador↔servidor), antes de o destinatário atender.
-          if (pc.connectionState === "failed") setStatus("Falha na conexão");
+          if (pc.connectionState === "failed") setStatus("Falló la conexión");
         };
       }
       updateVideoUI();
-      setStatus("Chamando…");
+      setStatus("Llamando…");
       // O tempo só começa quando o DESTINATÁRIO atende. O sinal real vem do
       // backend via SSE global (call-status "connected" = atendeu).
       connectEvents();
     } catch (e) {
-      setStatus("Erro: " + (e.message || e));
+      setStatus("Error: " + (e.message || e));
     }
   }
 
@@ -825,7 +825,7 @@
   // por participante). Encerramento remoto chega como fechamento do WS.
   async function startGroupCall(state, withVideo) {
     if (call) return;
-    if (withVideo && !videoSupported()) { render({ error: "Vídeo não suportado neste navegador" }); return; }
+    if (withVideo && !videoSupported()) { render({ error: "Este navegador no soporta video" }); return; }
     render({ inGroupCall: true, name: state.name, video: withVideo, status: "Conectando…" });
     try {
       var r = await api("/api/sessions/" + state.session + "/calls/group", {
@@ -850,17 +850,17 @@
           call.gv = await openGroupVideo(state.session, labelFor);
           call.gv.onClose(function () { if (call && call.group) hangup(); });
         } catch (e) {
-          setStatus("Vídeo indisponível: " + (e.message || e));
+          setStatus("Video no disponible: " + (e.message || e));
         }
       }
       call.answered = true;
       call.t0 = Date.now();
-      setStatus("Em chamada de grupo");
+      setStatus("En llamada grupal");
       call.timer = setInterval(tick, 1000);
     } catch (e) {
       if (call && call.group) { var c = call; call = null; try { c.ws && c.ws.close(); } catch (_) {} try { c.gv && c.gv.close(); } catch (_) {} }
       api("/api/sessions/" + state.session + "/calls/group/end", { method: "POST", body: {} }).catch(function () {});
-      setStatus("Erro: " + (e.message || e));
+      setStatus("Error: " + (e.message || e));
     }
   }
 
@@ -945,7 +945,7 @@
         updateVideoUI();
       } else if (msg.type === "call-status") {
         if (msg.status === "connected") markAnswered();
-        else if (!call.answered) setStatus("Chamando…");
+        else if (!call.answered) setStatus("Llamando…");
       } else if (msg.type === "call-volume") {
         setVolumePct(Math.round((typeof msg.level === "number" ? msg.level : 1) * 100), true);
       } else if (msg.type === "call-action" && msg.kind === "spy") {
@@ -986,7 +986,7 @@
     incoming = null;
     stopRing();
     volumePct = 100;
-    render({ inCall: true, name: "Chamada recebida", phone: inc.peer, status: "Conectando…" });
+    render({ inCall: true, name: "Llamada entrante", phone: inc.peer, status: "Conectando…" });
     try {
       await ensureConfig();
       await api("/api/sessions/" + inc.sessionId + "/calls/" + inc.callId + "/accept", { method: "POST", body: {} });
@@ -1017,7 +1017,7 @@
         if (inc.video) toggleCam(document.getElementById("wacalls-cam"));
       }
     } catch (e) {
-      setStatus("Erro: " + (e.message || e));
+      setStatus("Error: " + (e.message || e));
       try { await api("/api/sessions/" + inc.sessionId + "/calls/" + inc.callId, { method: "DELETE" }); } catch (_) {}
     }
   }
@@ -1036,7 +1036,7 @@
     stopRing(); // garante que o apito de "tocando" pare ao atender
     call.answered = true;
     call.t0 = Date.now();
-    setStatus("Em chamada");
+    setStatus("En llamada");
     call.timer = setInterval(tick, 1000);
   }
 
@@ -1046,7 +1046,7 @@
     var mm = String(Math.floor(s / 60)).padStart(2, "0");
     var ss = String(s % 60).padStart(2, "0");
     var st = document.getElementById("wacalls-st");
-    if (st && st.textContent.indexOf("Erro") < 0) st.textContent = mm + ":" + ss;
+    if (st && st.textContent.indexOf("Error") < 0) st.textContent = mm + ":" + ss;
   }
 
   function toggleMute(btn) {
@@ -1059,7 +1059,7 @@
     // on=true significa que estava ligado e agora fica mudo
     btn.innerHTML = on ? ICON_MIC_OFF : ICON_MIC;
     btn.classList.toggle("on", on);
-    btn.title = on ? "Ativar microfone" : "Mudo";
+    btn.title = on ? "Activar micrófono" : "Silenciar micrófono";
   }
 
   function hangup() {
@@ -1137,9 +1137,9 @@
   }
 
   var WARN_MSG =
-    "Esta conversa não pertence à caixa de entrada conectada ao WhatsApp. " +
-    "Abra uma conversa da caixa conectada para ligar. " +
-    "(Se o ícone apareceu aqui por engano, é cache do Chatwoot — atualize a página.)";
+    "Esta conversación no pertenece a la bandeja conectada a WhatsApp. " +
+    "Abre una conversación de la bandeja conectada para llamar. " +
+    "(Si el ícono apareció aquí por error, es caché de Chatwoot: recarga la página.)";
 
   function onCall() {
     console.log("[wacalls-widget] clique no botão de ligar");
@@ -1150,7 +1150,7 @@
     // Sem vínculo em cache: confirma ao vivo (o ícone pode ter sobrado por cache do Chatwoot).
     var key = convKey();
     if (!key) {
-      render({ warn: "Abra uma conversa para ligar." });
+      render({ warn: "Abre una conversación para llamar." });
       return;
     }
     render({ loading: true });
@@ -1189,7 +1189,8 @@
     }
     var spans = document.querySelectorAll("span");
     for (var j = 0; j < spans.length; j++) {
-      if (spans[j].textContent.trim() === "Ações da conversa") {
+      var tx = spans[j].textContent.trim();
+      if (tx === "Ações da conversa" || tx === "Acciones de la conversación" || tx === "Conversation Actions") {
         var section = spans[j].closest("div");
         if (section && section.parentElement) {
           var divs = section.parentElement.querySelectorAll("div");
@@ -1217,7 +1218,7 @@
     var btn = document.createElement("button");
     btn.id = "wacalls-btn";
     btn.type = "button";
-    btn.title = resolved && resolved.group ? "Ligar para o grupo pelo WhatsApp" : "Ligar pelo WhatsApp";
+    btn.title = resolved && resolved.group ? "Llamar al grupo por WhatsApp" : "Llamar por WhatsApp";
     btn.className = found.sibling && found.sibling.className
       ? found.sibling.className // herda o estilo nativo do Chatwoot
       : "inline-flex items-center justify-center h-8 w-8 p-0 rounded-lg";
