@@ -11,6 +11,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.10
+
+- **Página de Configuración:** el botón Configuración de la barra lateral abre una página con pestañas: **MCP** (llaves de administrador), **Números desvinculados** (cuentas cuya bandeja de Chatwoot se borró, con la cuenta atrás de 24 h antes del borrado) y **Sistema** (versión, commit, tiempo encendido, cuentas conectadas, opciones del servidor, documentación de la API y extensión Passkey).
+- **Script de Chatwoot en español:** el botón y la tarjeta de llamada que ven los asesores (llamar, contestar, rechazar, silenciar, video, llamadas grupales y avisos). La búsqueda de respaldo del lugar del botón también reconoce Chatwoot en español e inglés.
+- `/api/config` devuelve `startedAt` (inicio del proceso).
+
 ### v1.1.7-lhcia.9
 
 - **Panel en español (lo más usado):** barra lateral, encabezado de la sesión, vinculación por QR o código, tarjetas de llamada (individual y grupal), marcador, historial, inicio de sesión, ventana MCP y Configuración general. Pendiente: los diálogos técnicos (SIP, Webhook, Proxy, Chatwoot, Formularios, Opciones).
