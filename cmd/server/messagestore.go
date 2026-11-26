@@ -93,7 +93,15 @@ func (s *Session) recordOutgoing(chat types.JID, msgID string, ts int64, msg *wa
 	// registra como "enviada por nós pela API" — o espelhamento no Chatwoot usa a
 	// origem para decidir se reflete (toggle mirror_api) ou ignora
 	s.markSelfSent(msgID, selfSentAPI)
-	if s.mgr.store == nil {
+	s.saveOutgoing(chat, msgID, ts, msg)
+}
+
+// saveOutgoing grava no histórico uma mensagem enviada por esta sessão (API ou
+// resposta do Chatwoot). Sem isso o histórico não tinha as respostas do Chatwoot
+// e o arquivamento (que informa a última mensagem do chat) era ignorado pelo
+// celular quando a última mensagem era uma dessas.
+func (s *Session) saveOutgoing(chat types.JID, msgID string, ts int64, msg *waE2E.Message) {
+	if s.mgr == nil || s.mgr.store == nil {
 		return
 	}
 	typ := messageType(msg)

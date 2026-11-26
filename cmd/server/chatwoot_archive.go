@@ -286,22 +286,28 @@ func (s *Session) setWAArchive(jid types.JID, archive bool) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	aliases := s.chatAliases(jid)
+	// o WhatsApp identifica as conversas 1:1 pelo LID: se houver, é ele o alvo
 	target := jid
+	for _, a := range aliases {
+		if j, err := types.ParseJID(a); err == nil && j.Server == types.HiddenUserServer {
+			target = j
+			break
+		}
+	}
 	var ts time.Time
 	var key *waCommon.MessageKey
 	if s.mgr != nil && s.mgr.store != nil {
-		if msgs, err := s.mgr.store.listMessagesIn(ctx, s.id, s.chatAliases(jid), 1, 0, false); err == nil && len(msgs) > 0 {
+		if msgs, err := s.mgr.store.listMessagesIn(ctx, s.id, aliases, 1, 0, false); err == nil && len(msgs) > 0 {
 			m := msgs[0]
-			if j, err := types.ParseJID(m.ChatJID); err == nil {
-				target = j
-			}
 			ts = time.UnixMilli(m.Timestamp)
-			key = &waCommon.MessageKey{RemoteJID: proto.String(m.ChatJID), FromMe: proto.Bool(m.FromMe), ID: proto.String(m.MsgID)}
+			key = &waCommon.MessageKey{RemoteJID: proto.String(target.String()), FromMe: proto.Bool(m.FromMe), ID: proto.String(m.MsgID)}
 			if target.Server == types.GroupServer && !m.FromMe && m.SenderJID != "" {
 				key.Participant = proto.String(m.SenderJID)
 			}
 		}
 	}
+	s.log.Info("whatsapp: enviando arquivamento", "chat", target.String(), "archived", archive, "last_msg_ts", ts.UnixMilli())
 	markEcho(waArchiveEchoKey(s.id, target.String()), fmt.Sprint(archive))
 	return s.client.SendAppState(ctx, appstate.BuildArchive(target, archive, ts, key))
 }

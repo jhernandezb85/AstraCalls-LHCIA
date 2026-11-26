@@ -223,6 +223,7 @@ func (s *Session) sendAndMark(ctx context.Context, jid types.JID, msg *waE2E.Mes
 		return "", err
 	}
 	s.markSelfSent(resp.ID, selfSentChatwoot)
+	s.saveOutgoing(jid, resp.ID, resp.Timestamp.UnixMilli(), msg)
 	return resp.ID, nil
 }
 
