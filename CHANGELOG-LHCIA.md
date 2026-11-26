@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.17
+
+- **Editar mensajes desde Chatwoot:** nuevo `POST /api/sessions/{sid}/chatwoot/messages/{id}/edit` `{text, conversationId}` (solo llave maestra; no es parte del widget). Edita en WhatsApp un mensaje de texto enviado por la cuenta, hasta 15 minutos después, y deja en la conversación una nota privada "✏️ Editado en WhatsApp:" con el texto nuevo. Lo usa la opción "Editar" del provisioner `prov-v1.0.9`.
+
 ### v1.1.7-lhcia.16
 
 - **Llamada contestada en el celular:** al contestar en el celular, WhatsApp manda un `accept` desde el propio número y un `terminate` con `reason="accepted_elsewhere"`. Antes el `accept` se tomaba como si el cliente aceptara y el `terminate` se ignoraba, así que el CRM seguía sonando. Ahora la llamada se cierra solo en el CRM (no se envía nada a WhatsApp; la conversación sigue en el celular) y la nota dice **"📞 Llamada entrante · contestada en el celular"**.
