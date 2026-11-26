@@ -219,7 +219,7 @@ func TestMCPScopedKeys(t *testing.T) {
 	if nRO == 0 || nRO == nAll {
 		t.Fatalf("filtro somente leitura: %d de %d", nRO, nAll)
 	}
-	if !strings.Contains(mcpInstructionsFor(mcpScope{SessionID: "S1"}), "único número") {
+	if !strings.Contains(mcpInstructionsFor(mcpScope{SessionID: "S1"}), "un solo número") {
 		t.Fatal("instruções do escopo não trocaram o texto de sessões")
 	}
 

@@ -35,20 +35,20 @@ func mcpInstructionsFor(sc mcpScope) string {
 	if !sc.scoped() {
 		return mcpInstructions
 	}
-	txt := strings.Replace(mcpInstructions, "- Se houver mais de uma sessão (número de WhatsApp), chame list_sessions e passe \"session\" (ID, nome ou telefone). Com uma sessão só, pode omitir.\n",
-		"- Esta conexão usa um único número de WhatsApp (veja list_sessions); não é preciso escolher sessão.\n", 1)
+	txt := strings.Replace(mcpInstructions, "- Si hay más de una sesión (número de WhatsApp), llama a list_sessions y pasa \"session\" (ID, nombre o teléfono). Con una sola sesión se puede omitir.\n",
+		"- Esta conexión usa un solo número de WhatsApp (ver list_sessions); no hace falta elegir sesión.\n", 1)
 	if sc.ReadOnly {
-		txt += "\n- Chave somente leitura: dá para consultar, mas não enviar nem alterar nada."
+		txt += "\n- Llave de solo lectura: permite consultar, pero no enviar ni cambiar nada."
 	}
 	return txt
 }
 
-const mcpInstructions = `AstraCalls: WhatsApp (mensagens, ligações de voz e vídeo, grupos, comunidades e contatos).
-- Telefones sempre com DDI + DDD, só dígitos (ex.: 5561999998888). Grupos usam o ID terminado em @g.us.
-- Se houver mais de uma sessão (número de WhatsApp), chame list_sessions e passe "session" (ID, nome ou telefone). Com uma sessão só, pode omitir.
-- Para ler conversas: list_chats e depois get_chat_messages; para achar algo: search_messages.
-- Envios para contatos novos contam no limite do WhatsApp (get_send_limit). Evite disparos em massa.
-- api_request cobre qualquer rota da API REST do AstraCalls que não tenha ferramenta própria.`
+const mcpInstructions = `AstraCalls: WhatsApp (mensajes, llamadas de voz y video, grupos, comunidades y contactos).
+- Teléfonos siempre con código de país, solo dígitos (ej.: 51987654321). Los grupos usan el ID que termina en @g.us.
+- Si hay más de una sesión (número de WhatsApp), llama a list_sessions y pasa "session" (ID, nombre o teléfono). Con una sola sesión se puede omitir.
+- Para leer conversaciones: list_chats y luego get_chat_messages; para encontrar algo: search_messages.
+- Los envíos a contactos nuevos cuentan para el límite de WhatsApp (get_send_limit). Evita los envíos masivos.
+- api_request cubre cualquier ruta de la API REST de AstraCalls que no tenga herramienta propia.`
 
 type mcpCall struct {
 	Method string
@@ -89,7 +89,7 @@ func (a mcpArgs) need(k string) (string, error) {
 	if v := a.str(k); v != "" {
 		return v, nil
 	}
-	return "", fmt.Errorf("parâmetro obrigatório: %s", k)
+	return "", fmt.Errorf("parámetro obligatorio: %s", k)
 }
 
 func (a mcpArgs) boolean(k string) bool {
@@ -137,7 +137,7 @@ func (a mcpArgs) needList(k string) ([]string, error) {
 	if l := a.list(k); len(l) > 0 {
 		return l, nil
 	}
-	return nil, fmt.Errorf("parâmetro obrigatório: %s (lista)", k)
+	return nil, fmt.Errorf("parámetro obligatorio: %s (lista)", k)
 }
 
 // copyOpt copia para body os argumentos opcionais presentes.
@@ -165,16 +165,16 @@ func pEnum(desc string, vals ...string) map[string]any {
 func pObj(desc string) map[string]any { return map[string]any{"type": "object", "description": desc} }
 
 var (
-	argTo        = pStr("Destino: telefone com DDI+DDD só dígitos (ex.: 5561999998888) ou ID do grupo (...@g.us).")
-	argPhone     = pStr("Telefone com DDI+DDD só dígitos (ex.: 5561999998888).")
-	argMessageID = pStr("ID da mensagem do WhatsApp.")
-	argGroupID   = pStr("ID do grupo (termina em @g.us).")
-	argURL       = pStr("URL pública do arquivo.")
-	argBase64    = pStr("Conteúdo em base64 (alternativa à url; pode ser data:...;base64,...).")
-	argMime      = pStr("Tipo MIME (opcional; ex.: image/jpeg).")
-	argQuoted    = pStr("Opcional: ID da mensagem a responder (citar).")
-	argLimit     = pNum("Quantidade máxima de itens.")
-	argOffset    = pNum("Quantos itens pular (paginação).")
+	argTo        = pStr("Destino: teléfono con código de país, solo dígitos (ej.: 51987654321), o ID del grupo (...@g.us).")
+	argPhone     = pStr("Teléfono con código de país, solo dígitos (ej.: 51987654321).")
+	argMessageID = pStr("ID del mensaje de WhatsApp.")
+	argGroupID   = pStr("ID del grupo (termina en @g.us).")
+	argURL       = pStr("URL pública del archivo.")
+	argBase64    = pStr("Contenido en base64 (alternativa a la url; puede ser data:...;base64,...).")
+	argMime      = pStr("Tipo MIME (opcional; ej.: image/jpeg).")
+	argQuoted    = pStr("Opcional: ID del mensaje al que se responde (citar).")
+	argLimit     = pNum("Cantidad máxima de elementos.")
+	argOffset    = pNum("Cuántos elementos saltar (paginación).")
 )
 
 func withMedia(props map[string]any) map[string]any {
@@ -186,7 +186,7 @@ func withMedia(props map[string]any) map[string]any {
 
 func mediaBody(a mcpArgs, to string) (map[string]any, error) {
 	if a.str("url") == "" && a.str("base64") == "" {
-		return nil, errors.New("informe url ou base64 do arquivo")
+		return nil, errors.New("indica la url o el base64 del archivo")
 	}
 	body := map[string]any{"to": to}
 	a.copyOpt(body, "url", "base64", "mimetype", "quotedMessageId")
@@ -209,26 +209,26 @@ func seg(s string) string { return url.PathEscape(s) }
 var mcpTools = []mcpTool{
 	// ----- sessão -----
 	{
-		Name: "list_sessions", Title: "Listar sessões", ReadOnly: true, NoSession: true,
-		Description: "Lista as sessões (números de WhatsApp) do AstraCalls com ID, nome, telefone e estado da conexão.",
+		Name: "list_sessions", Title: "Listar sesiones", ReadOnly: true, NoSession: true,
+		Description: "Lista las sesiones (números de WhatsApp) de AstraCalls con ID, nombre, teléfono y estado de la conexión.",
 	},
 	{
-		Name: "get_send_limit", Title: "Limite de conversas novas", ReadOnly: true,
-		Description: "Consulta o limite do WhatsApp para iniciar conversas novas (cota usada, restante, status de aviso/travado).",
+		Name: "get_send_limit", Title: "Límite de conversaciones nuevas", ReadOnly: true,
+		Description: "Consulta el límite de WhatsApp para iniciar conversaciones nuevas (cupo usado, restante y si está en aviso o bloqueado).",
 		Build:       func(a mcpArgs) (mcpCall, error) { return mcpCall{Method: "GET", Path: "/capping"}, nil },
 	},
 	{
-		Name: "get_restriction_status", Title: "Status de restrição", ReadOnly: true,
-		Description: "Mostra se o número está com restrição/bloqueio temporário do WhatsApp.",
+		Name: "get_restriction_status", Title: "Estado de restricción", ReadOnly: true,
+		Description: "Muestra si el número tiene una restricción o bloqueo temporal de WhatsApp.",
 		Build:       func(a mcpArgs) (mcpCall, error) { return mcpCall{Method: "GET", Path: "/restriction-status"}, nil },
 	},
 
 	// ----- mensagens -----
 	{
 		Name: "send_text", Title: "Enviar texto",
-		Description: "Envia mensagem de texto no WhatsApp.",
-		Props: map[string]any{"to": argTo, "text": pStr("Texto da mensagem."), "quotedMessageId": argQuoted,
-			"mentions": pList("Opcional (grupos): telefones a mencionar.")},
+		Description: "Envía un mensaje de texto por WhatsApp.",
+		Props: map[string]any{"to": argTo, "text": pStr("Texto del mensaje."), "quotedMessageId": argQuoted,
+			"mentions": pList("Opcional (grupos): teléfonos a mencionar.")},
 		Required: []string{"to", "text"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -247,12 +247,12 @@ var mcpTools = []mcpTool{
 			return mcpCall{Method: "POST", Path: "/messages/text", Body: body}, nil
 		},
 	},
-	mediaTool("send_image", "Enviar imagem", "Envia uma imagem (JPG/PNG) com legenda opcional.", "image", true),
-	mediaTool("send_video", "Enviar vídeo", "Envia um vídeo (MP4) com legenda opcional.", "video", true),
+	mediaTool("send_image", "Enviar imagen", "Envía una imagen (JPG/PNG) con texto opcional.", "image", true),
+	mediaTool("send_video", "Enviar video", "Envía un video (MP4) con texto opcional.", "video", true),
 	{
-		Name: "send_audio", Title: "Enviar áudio",
-		Description: "Envia um áudio. Por padrão vai como nota de voz (gravado na hora).",
-		Props:       withMedia(map[string]any{"to": argTo, "ptt": pBool("Nota de voz (padrão true)."), "quotedMessageId": argQuoted}),
+		Name: "send_audio", Title: "Enviar audio",
+		Description: "Envía un audio. Por defecto va como nota de voz (como si se grabara en el momento).",
+		Props:       withMedia(map[string]any{"to": argTo, "ptt": pBool("Nota de voz (por defecto true)."), "quotedMessageId": argQuoted}),
 		Required:    []string{"to"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -272,9 +272,9 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name: "send_document", Title: "Enviar documento",
-		Description: "Envia um arquivo (PDF, planilha etc.) com nome e legenda.",
-		Props: withMedia(map[string]any{"to": argTo, "filename": pStr("Nome do arquivo (ex.: proposta.pdf)."),
-			"caption": pStr("Legenda opcional."), "quotedMessageId": argQuoted}),
+		Description: "Envía un archivo (PDF, hoja de cálculo, etc.) con nombre y texto.",
+		Props: withMedia(map[string]any{"to": argTo, "filename": pStr("Nombre del archivo (ej.: propuesta.pdf)."),
+			"caption": pStr("Texto opcional."), "quotedMessageId": argQuoted}),
 		Required: []string{"to"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -290,10 +290,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "send_location", Title: "Enviar localização",
-		Description: "Envia uma localização no mapa.",
-		Props: map[string]any{"to": argTo, "latitude": pNum("Latitude."), "longitude": pNum("Longitude."),
-			"name": pStr("Nome do local (opcional)."), "address": pStr("Endereço (opcional).")},
+		Name: "send_location", Title: "Enviar ubicación",
+		Description: "Envía una ubicación en el mapa.",
+		Props: map[string]any{"to": argTo, "latitude": pNum("Latitud."), "longitude": pNum("Longitud."),
+			"name": pStr("Nombre del lugar (opcional)."), "address": pStr("Dirección (opcional).")},
 		Required: []string{"to", "latitude", "longitude"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -303,7 +303,7 @@ var mcpTools = []mcpTool{
 			lat, ok1 := a.num("latitude")
 			lng, ok2 := a.num("longitude")
 			if !ok1 || !ok2 {
-				return mcpCall{}, errors.New("informe latitude e longitude")
+				return mcpCall{}, errors.New("indica latitud y longitud")
 			}
 			body := map[string]any{"to": to, "latitude": lat, "longitude": lng}
 			a.copyOpt(body, "name", "address")
@@ -311,9 +311,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "send_contact", Title: "Enviar contato",
-		Description: "Envia um cartão de contato (vCard).",
-		Props:       map[string]any{"to": argTo, "fullName": pStr("Nome do contato."), "phone": argPhone},
+		Name: "send_contact", Title: "Enviar contacto",
+		Description: "Envía una tarjeta de contacto (vCard).",
+		Props:       map[string]any{"to": argTo, "fullName": pStr("Nombre del contacto."), "phone": argPhone},
 		Required:    []string{"to", "fullName", "phone"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -333,10 +333,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "send_poll", Title: "Enviar enquete",
-		Description: "Envia uma enquete com 2 a 12 opções.",
-		Props: map[string]any{"to": argTo, "name": pStr("Pergunta da enquete."), "options": pList("Opções."),
-			"multipleAnswers": pBool("Permitir várias respostas.")},
+		Name: "send_poll", Title: "Enviar encuesta",
+		Description: "Envía una encuesta con 2 a 12 opciones.",
+		Props: map[string]any{"to": argTo, "name": pStr("Pregunta de la encuesta."), "options": pList("Opciones."),
+			"multipleAnswers": pBool("Permitir varias respuestas.")},
 		Required: []string{"to", "name", "options"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -349,20 +349,20 @@ var mcpTools = []mcpTool{
 			}
 			opts := a.list("options")
 			if len(opts) < 2 {
-				return mcpCall{}, errors.New("a enquete precisa de pelo menos 2 opções")
+				return mcpCall{}, errors.New("la encuesta necesita al menos 2 opciones")
 			}
 			return mcpCall{Method: "POST", Path: "/messages/poll", Body: map[string]any{
 				"to": to, "name": name, "options": opts, "multipleAnswers": a.boolean("multipleAnswers")}}, nil
 		},
 	},
 	{
-		Name: "send_buttons", Title: "Enviar botões",
-		Description: "Envia mensagem com até 3 botões de resposta rápida.",
-		Props: map[string]any{"to": argTo, "text": pStr("Texto da mensagem."),
-			"buttons": map[string]any{"type": "array", "description": "Até 3 botões.", "items": map[string]any{
-				"type": "object", "properties": map[string]any{"id": pStr("ID devolvido no clique."), "text": pStr("Texto do botão.")},
+		Name: "send_buttons", Title: "Enviar botones",
+		Description: "Envía un mensaje con hasta 3 botones de respuesta rápida.",
+		Props: map[string]any{"to": argTo, "text": pStr("Texto del mensaje."),
+			"buttons": map[string]any{"type": "array", "description": "Hasta 3 botones.", "items": map[string]any{
+				"type": "object", "properties": map[string]any{"id": pStr("ID que se devuelve al hacer clic."), "text": pStr("Texto del botón.")},
 				"required": []string{"text"}}},
-			"footer": pStr("Rodapé (opcional).")},
+			"footer": pStr("Pie de mensaje (opcional).")},
 		Required: []string{"to", "text", "buttons"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -384,7 +384,7 @@ var mcpTools = []mcpTool{
 				buttons = append(buttons, map[string]any{"id": id, "text": txt})
 			}
 			if len(buttons) == 0 || len(buttons) > 3 {
-				return mcpCall{}, errors.New("informe de 1 a 3 botões com texto")
+				return mcpCall{}, errors.New("indica de 1 a 3 botones con texto")
 			}
 			body := map[string]any{"to": to, "text": a.str("text"), "buttons": buttons}
 			a.copyOpt(body, "footer")
@@ -393,11 +393,11 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name: "send_list", Title: "Enviar lista",
-		Description: "Envia uma lista de opções (menu). Só aparece no celular.",
-		Props: map[string]any{"to": argTo, "body": pStr("Texto da mensagem."), "buttonText": pStr("Texto do botão que abre a lista."),
-			"sections": map[string]any{"type": "array", "description": "Seções: [{title, rows:[{id, title, description}]}].",
+		Description: "Envía una lista de opciones (menú). Solo se ve en el celular.",
+		Props: map[string]any{"to": argTo, "body": pStr("Texto del mensaje."), "buttonText": pStr("Texto del botón que abre la lista."),
+			"sections": map[string]any{"type": "array", "description": "Secciones: [{title, rows:[{id, title, description}]}].",
 				"items": map[string]any{"type": "object"}},
-			"footer": pStr("Rodapé (opcional).")},
+			"footer": pStr("Pie de mensaje (opcional).")},
 		Required: []string{"to", "body", "sections"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -405,11 +405,11 @@ var mcpTools = []mcpTool{
 				return mcpCall{}, err
 			}
 			if _, ok := a["sections"].([]any); !ok {
-				return mcpCall{}, errors.New("sections precisa ser uma lista")
+				return mcpCall{}, errors.New("sections tiene que ser una lista")
 			}
 			btn := a.str("buttonText")
 			if btn == "" {
-				btn = "Ver opções"
+				btn = "Ver opciones"
 			}
 			body := map[string]any{"to": to, "body": a.str("body"), "buttonText": btn, "sections": a["sections"]}
 			a.copyOpt(body, "footer")
@@ -417,10 +417,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "react", Title: "Reagir a mensagem",
-		Description: "Reage a uma mensagem com um emoji (vazio remove a reação).",
-		Props: map[string]any{"to": argTo, "messageId": argMessageID, "reaction": pStr("Emoji (ex.: 👍)."),
-			"fromMe": pBool("A mensagem foi enviada por este número.")},
+		Name: "react", Title: "Reaccionar a un mensaje",
+		Description: "Reacciona a un mensaje con un emoji (vacío quita la reacción).",
+		Props: map[string]any{"to": argTo, "messageId": argMessageID, "reaction": pStr("Emoji (ej.: 👍)."),
+			"fromMe": pBool("El mensaje fue enviado por este número.")},
 		Required: []string{"to", "messageId", "reaction"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			body, err := targetBody(a)
@@ -432,9 +432,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "edit_message", Title: "Editar mensagem",
-		Description: "Edita o texto de uma mensagem enviada por este número.",
-		Props:       map[string]any{"to": argTo, "messageId": argMessageID, "text": pStr("Novo texto.")},
+		Name: "edit_message", Title: "Editar mensaje",
+		Description: "Edita el texto de un mensaje enviado por este número.",
+		Props:       map[string]any{"to": argTo, "messageId": argMessageID, "text": pStr("Texto nuevo.")},
 		Required:    []string{"to", "messageId", "text"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			body, err := targetBody(a)
@@ -446,9 +446,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "delete_message", Title: "Apagar mensagem", Destructive: true,
-		Description: "Apaga uma mensagem para todos.",
-		Props:       map[string]any{"to": argTo, "messageId": argMessageID, "fromMe": pBool("A mensagem foi enviada por este número.")},
+		Name: "delete_message", Title: "Borrar mensaje", Destructive: true,
+		Description: "Borra un mensaje para todos.",
+		Props:       map[string]any{"to": argTo, "messageId": argMessageID, "fromMe": pBool("El mensaje fue enviado por este número.")},
 		Required:    []string{"to", "messageId"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			body, err := targetBody(a)
@@ -459,9 +459,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "mark_read", Title: "Marcar como lida",
-		Description: "Marca mensagens como lidas (tique azul).",
-		Props:       map[string]any{"to": argTo, "messageIds": pList("IDs das mensagens.")},
+		Name: "mark_read", Title: "Marcar como leído",
+		Description: "Marca mensajes como leídos (check azul).",
+		Props:       map[string]any{"to": argTo, "messageIds": pList("IDs de los mensajes.")},
 		Required:    []string{"to", "messageIds"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			to, err := a.need("to")
@@ -476,8 +476,8 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "set_typing", Title: "Digitando…",
-		Description: "Mostra \"digitando…\" ou \"gravando áudio…\" na conversa, ou para.",
+		Name: "set_typing", Title: "Escribiendo…",
+		Description: "Muestra \"escribiendo…\" o \"grabando audio…\" en la conversación, o lo detiene.",
 		Props:       map[string]any{"to": argTo, "state": pEnum("Estado.", "typing", "recording", "paused")},
 		Required:    []string{"to"},
 		Build: func(a mcpArgs) (mcpCall, error) {
@@ -493,17 +493,17 @@ var mcpTools = []mcpTool{
 
 	// ----- leitura de conversas -----
 	{
-		Name: "list_chats", Title: "Listar conversas", ReadOnly: true,
-		Description: "Lista as conversas mais recentes guardadas no histórico.",
+		Name: "list_chats", Title: "Listar conversaciones", ReadOnly: true,
+		Description: "Lista las conversaciones más recientes guardadas en el historial.",
 		Props:       map[string]any{"limit": argLimit, "offset": argOffset},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			return mcpCall{Method: "GET", Path: "/chats", Query: pageQuery(a)}, nil
 		},
 	},
 	{
-		Name: "get_chat_messages", Title: "Mensagens da conversa", ReadOnly: true,
-		Description: "Lê as mensagens de uma conversa (mais recentes primeiro).",
-		Props:       map[string]any{"chat": pStr("Telefone, ID do grupo ou ID da conversa (de list_chats)."), "limit": argLimit, "offset": argOffset},
+		Name: "get_chat_messages", Title: "Mensajes de la conversación", ReadOnly: true,
+		Description: "Lee los mensajes de una conversación (los más recientes primero).",
+		Props:       map[string]any{"chat": pStr("Teléfono, ID del grupo o ID de la conversación (de list_chats)."), "limit": argLimit, "offset": argOffset},
 		Required:    []string{"chat"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			chat, err := a.need("chat")
@@ -514,9 +514,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "search_messages", Title: "Buscar mensagens", ReadOnly: true,
-		Description: "Busca texto nas mensagens do histórico, opcionalmente numa conversa.",
-		Props:       map[string]any{"q": pStr("Texto a buscar."), "chat": pStr("Opcional: telefone ou ID da conversa."), "limit": argLimit},
+		Name: "search_messages", Title: "Buscar mensajes", ReadOnly: true,
+		Description: "Busca texto en los mensajes del historial, opcionalmente en una sola conversación.",
+		Props:       map[string]any{"q": pStr("Texto a buscar."), "chat": pStr("Opcional: teléfono o ID de la conversación."), "limit": argLimit},
 		Required:    []string{"q"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			q, err := a.need("q")
@@ -534,9 +534,9 @@ var mcpTools = []mcpTool{
 
 	// ----- ligações -----
 	{
-		Name: "start_call", Title: "Fazer ligação",
-		Description: "Liga para um número pelo WhatsApp (voz ou vídeo). A conversa por voz precisa de um atendente no painel ou de um agente de voz no WebSocket da chamada.",
-		Props:       map[string]any{"phone": argPhone, "video": pBool("Chamada de vídeo."), "record": pBool("Gravar a chamada.")},
+		Name: "start_call", Title: "Hacer una llamada",
+		Description: "Llama a un número por WhatsApp (voz o video). Para hablar hace falta un agente en el panel o un agente de voz conectado al WebSocket de la llamada.",
+		Props:       map[string]any{"phone": argPhone, "video": pBool("Videollamada."), "record": pBool("Grabar la llamada.")},
 		Required:    []string{"phone"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			phone, err := a.need("phone")
@@ -548,9 +548,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "end_call", Title: "Encerrar ligação",
-		Description: "Encerra uma ligação em andamento.",
-		Props:       map[string]any{"callId": pStr("ID da chamada.")},
+		Name: "end_call", Title: "Terminar llamada",
+		Description: "Termina una llamada en curso.",
+		Props:       map[string]any{"callId": pStr("ID de la llamada.")},
 		Required:    []string{"callId"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			id, err := a.need("callId")
@@ -562,8 +562,8 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name: "fake_call", Title: "Toque fantasma",
-		Description: "Faz o telefone do contato tocar por alguns segundos e desliga (chama atenção sem conversa).",
-		Props:       map[string]any{"phone": argPhone, "seconds": pNum("Duração do toque, 1 a 30 s (padrão 3)."), "video": pBool("Tocar como vídeo.")},
+		Description: "Hace sonar el teléfono del contacto unos segundos y cuelga (llama la atención sin conversar).",
+		Props:       map[string]any{"phone": argPhone, "seconds": pNum("Duración del timbre, 1 a 30 s (por defecto 3)."), "video": pBool("Reproducir como video.")},
 		Required:    []string{"phone"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			phone, err := a.need("phone")
@@ -580,10 +580,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "broadcast_calls", Title: "Disparo de ligações",
-		Description: "Liga para vários números e toca um áudio (ou vídeo) gravado quando atenderem. Devolve o ID do disparo.",
-		Props: map[string]any{"numbers": pList("Telefones."), "audio_url": pStr("URL do áudio/vídeo a tocar."),
-			"video": pBool("Ligação de vídeo (arquivo de vídeo).")},
+		Name: "broadcast_calls", Title: "Envío masivo de llamadas",
+		Description: "Llama a varios números y reproduce un audio (o video) grabado cuando contestan. Devuelve el ID del envío.",
+		Props: map[string]any{"numbers": pList("Teléfonos."), "audio_url": pStr("URL del audio/video a reproducir."),
+			"video": pBool("Videollamada (archivo de video).")},
 		Required: []string{"numbers", "audio_url"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			nums, err := a.needList("numbers")
@@ -599,9 +599,9 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "broadcast_status", Title: "Status do disparo", ReadOnly: true,
-		Description: "Mostra o andamento de um disparo de ligações.",
-		Props:       map[string]any{"campaignId": pStr("ID do disparo.")},
+		Name: "broadcast_status", Title: "Estado del envío de llamadas", ReadOnly: true,
+		Description: "Muestra el avance de un envío masivo de llamadas.",
+		Props:       map[string]any{"campaignId": pStr("ID del envío.")},
 		Required:    []string{"campaignId"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			id, err := a.need("campaignId")
@@ -612,8 +612,8 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "call_history", Title: "Histórico de ligações", ReadOnly: true,
-		Description: "Lista as ligações feitas e recebidas.",
+		Name: "call_history", Title: "Historial de llamadas", ReadOnly: true,
+		Description: "Lista las llamadas hechas y recibidas.",
 		Props:       map[string]any{"limit": argLimit, "offset": argOffset},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			return mcpCall{Method: "GET", Path: "/history", Query: pageQuery(a)}, nil
@@ -623,7 +623,7 @@ var mcpTools = []mcpTool{
 	// ----- contatos -----
 	{
 		Name: "check_number", Title: "Verificar número", ReadOnly: true,
-		Description: "Verifica se um telefone tem WhatsApp.",
+		Description: "Verifica si un teléfono tiene WhatsApp.",
 		Props:       map[string]any{"phone": argPhone},
 		Required:    []string{"phone"},
 		Build: func(a mcpArgs) (mcpCall, error) {
@@ -635,8 +635,8 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "list_contacts", Title: "Listar contatos", ReadOnly: true,
-		Description: "Lista os contatos salvos na agenda do número.",
+		Name: "list_contacts", Title: "Listar contactos", ReadOnly: true,
+		Description: "Lista los contactos guardados en la agenda del número.",
 		Build:       func(a mcpArgs) (mcpCall, error) { return mcpCall{Method: "GET", Path: "/contacts"}, nil },
 	},
 	contactTool("get_contact", "Ver contato", "Mostra nome, recado e dados de um contato.", "GET", "", true),
@@ -647,16 +647,16 @@ var mcpTools = []mcpTool{
 	// ----- grupos -----
 	{
 		Name: "list_groups", Title: "Listar grupos", ReadOnly: true,
-		Description: "Lista os grupos de que o número participa.",
+		Description: "Lista los grupos en los que participa el número.",
 		Build:       func(a mcpArgs) (mcpCall, error) { return mcpCall{Method: "GET", Path: "/groups"}, nil },
 	},
-	groupTool("get_group", "Ver grupo", "Mostra nome, descrição e configurações do grupo.", "GET", ""),
-	groupTool("list_group_participants", "Participantes do grupo", "Lista os participantes e administradores do grupo.", "GET", "/participants"),
-	groupTool("get_group_invite", "Link de convite", "Devolve o link de convite do grupo.", "GET", "/invite"),
+	groupTool("get_group", "Ver grupo", "Muestra el nombre, la descripción y la configuración del grupo.", "GET", ""),
+	groupTool("list_group_participants", "Participantes del grupo", "Lista los participantes y administradores del grupo.", "GET", "/participants"),
+	groupTool("get_group_invite", "Enlace de invitación", "Devuelve el enlace de invitación del grupo.", "GET", "/invite"),
 	{
-		Name: "create_group", Title: "Criar grupo",
-		Description: "Cria um grupo com os participantes informados.",
-		Props:       map[string]any{"name": pStr("Nome do grupo."), "participants": pList("Telefones dos participantes.")},
+		Name: "create_group", Title: "Crear grupo",
+		Description: "Crea un grupo con los participantes indicados.",
+		Props:       map[string]any{"name": pStr("Nombre del grupo."), "participants": pList("Teléfonos de los participantes.")},
 		Required:    []string{"name"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			name, err := a.need("name")
@@ -671,10 +671,10 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "update_group_participants", Title: "Gerenciar participantes",
-		Description: "Adiciona, remove, promove a admin ou rebaixa participantes do grupo.",
-		Props: map[string]any{"groupId": argGroupID, "action": pEnum("Ação.", "add", "remove", "promote", "demote"),
-			"participants": pList("Telefones.")},
+		Name: "update_group_participants", Title: "Gestionar participantes",
+		Description: "Agrega, quita, hace administrador o quita de administrador a participantes del grupo.",
+		Props: map[string]any{"groupId": argGroupID, "action": pEnum("Acción.", "add", "remove", "promote", "demote"),
+			"participants": pList("Teléfonos.")},
 		Required: []string{"groupId", "action", "participants"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			gid, err := a.need("groupId")
@@ -685,7 +685,7 @@ var mcpTools = []mcpTool{
 			switch act {
 			case "add", "remove", "promote", "demote":
 			default:
-				return mcpCall{}, errors.New("action deve ser add, remove, promote ou demote")
+				return mcpCall{}, errors.New("action debe ser add, remove, promote o demote")
 			}
 			p, err := a.needList("participants")
 			if err != nil {
@@ -696,8 +696,8 @@ var mcpTools = []mcpTool{
 	},
 	{
 		Name: "update_group", Title: "Editar grupo",
-		Description: "Altera o nome e/ou a descrição do grupo.",
-		Props:       map[string]any{"groupId": argGroupID, "name": pStr("Novo nome (opcional)."), "description": pStr("Nova descrição (opcional).")},
+		Description: "Cambia el nombre y/o la descripción del grupo.",
+		Props:       map[string]any{"groupId": argGroupID, "name": pStr("Nombre nuevo (opcional)."), "description": pStr("Descripción nueva (opcional).")},
 		Required:    []string{"groupId"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			gid, err := a.need("groupId")
@@ -707,19 +707,19 @@ var mcpTools = []mcpTool{
 			_, hasDesc := a["description"]
 			switch {
 			case a.str("name") != "" && hasDesc:
-				return mcpCall{}, errors.New("altere nome e descrição em chamadas separadas")
+				return mcpCall{}, errors.New("cambia el nombre y la descripción en llamadas separadas")
 			case a.str("name") != "":
 				return mcpCall{Method: "PUT", Path: "/groups/" + seg(gid) + "/subject", Body: map[string]any{"subject": a.str("name")}}, nil
 			case hasDesc:
 				return mcpCall{Method: "PUT", Path: "/groups/" + seg(gid) + "/description", Body: map[string]any{"description": a.str("description")}}, nil
 			}
-			return mcpCall{}, errors.New("informe name ou description")
+			return mcpCall{}, errors.New("indica name o description")
 		},
 	},
 	{
-		Name: "join_group", Title: "Entrar em grupo",
-		Description: "Entra num grupo pelo link ou código de convite.",
-		Props:       map[string]any{"code": pStr("Link (chat.whatsapp.com/...) ou código.")},
+		Name: "join_group", Title: "Unirse a un grupo",
+		Description: "Se une a un grupo con el enlace o código de invitación.",
+		Props:       map[string]any{"code": pStr("Enlace (chat.whatsapp.com/...) o código.")},
 		Required:    []string{"code"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			code, err := a.need("code")
@@ -730,8 +730,8 @@ var mcpTools = []mcpTool{
 		},
 	},
 	{
-		Name: "leave_group", Title: "Sair do grupo", Destructive: true,
-		Description: "Sai do grupo.",
+		Name: "leave_group", Title: "Salir del grupo", Destructive: true,
+		Description: "Sale del grupo.",
 		Props:       map[string]any{"groupId": argGroupID},
 		Required:    []string{"groupId"},
 		Build: func(a mcpArgs) (mcpCall, error) {
@@ -746,27 +746,27 @@ var mcpTools = []mcpTool{
 	// ----- comunidades -----
 	{
 		Name: "list_communities", Title: "Listar comunidades", ReadOnly: true,
-		Description: "Lista as comunidades do número.",
+		Description: "Lista las comunidades del número.",
 		Build:       func(a mcpArgs) (mcpCall, error) { return mcpCall{Method: "GET", Path: "/communities"}, nil },
 	},
 
 	// ----- genérica -----
 	{
-		Name: "api_request", Title: "Chamada direta à API", Destructive: true, NoSession: true,
-		Description: "Chama qualquer rota da API REST do AstraCalls (/api/...). Use só quando nenhuma outra ferramenta servir. Ex.: GET /api/sessions/{id}/profile.",
+		Name: "api_request", Title: "Llamada directa a la API", Destructive: true, NoSession: true,
+		Description: "Llama a cualquier ruta de la API REST de AstraCalls (/api/...). Úsala solo cuando ninguna otra herramienta sirva. Ej.: GET /api/sessions/{id}/profile.",
 		Props: map[string]any{"method": pEnum("Método HTTP.", "GET", "POST", "PUT", "DELETE"),
-			"path": pStr("Caminho começando em /api/."), "query": pObj("Parâmetros de query (opcional)."), "body": pObj("Corpo JSON (opcional).")},
+			"path": pStr("Ruta que empieza con /api/."), "query": pObj("Parâmetros de query (opcional)."), "body": pObj("Corpo JSON (opcional).")},
 		Required: []string{"method", "path"},
 		Build: func(a mcpArgs) (mcpCall, error) {
 			m := strings.ToUpper(a.str("method"))
 			switch m {
 			case "GET", "POST", "PUT", "DELETE":
 			default:
-				return mcpCall{}, errors.New("method deve ser GET, POST, PUT ou DELETE")
+				return mcpCall{}, errors.New("method debe ser GET, POST, PUT o DELETE")
 			}
 			p := a.str("path")
 			if !strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/api/mcp") || strings.Contains(p, "..") {
-				return mcpCall{}, errors.New("path deve começar com /api/ (e não pode ser /api/mcp)")
+				return mcpCall{}, errors.New("path debe empezar con /api/ (y no puede ser /api/mcp)")
 			}
 			q := url.Values{}
 			if qm, ok := a["query"].(map[string]any); ok {
@@ -786,7 +786,7 @@ var mcpTools = []mcpTool{
 func mediaTool(name, title, desc, route string, caption bool) mcpTool {
 	props := withMedia(map[string]any{"to": argTo, "quotedMessageId": argQuoted})
 	if caption {
-		props["caption"] = pStr("Legenda (opcional).")
+		props["caption"] = pStr("Texto (opcional).")
 	}
 	return mcpTool{
 		Name: name, Title: title, Description: desc + " Informe url ou base64.",
@@ -851,7 +851,7 @@ func targetBody(a mcpArgs) (map[string]any, error) {
 	return body, nil
 }
 
-var argSession = pStr("Sessão (número de WhatsApp) que executa: ID, nome ou telefone. Opcional se houver só uma; veja list_sessions.")
+var argSession = pStr("Sesión (número de WhatsApp) que ejecuta: ID, nombre o teléfono. Opcional si hay una sola; ver list_sessions.")
 
 func (t mcpTool) schema(sc mcpScope) map[string]any {
 	props := map[string]any{}
@@ -938,7 +938,7 @@ func (s *server) serveMCP(w http.ResponseWriter, r *http.Request, sc mcpScope) {
 	}
 	raw, err := io.ReadAll(io.LimitReader(r.Body, mcpMaxBody))
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, mcpResponse{JSONRPC: "2.0", ID: json.RawMessage("null"), Error: &mcpError{-32700, "corpo ilegível"}})
+		writeJSON(w, http.StatusBadRequest, mcpResponse{JSONRPC: "2.0", ID: json.RawMessage("null"), Error: &mcpError{-32700, "cuerpo ilegible"}})
 		return
 	}
 	raw = bytes.TrimSpace(raw)
@@ -1014,12 +1014,12 @@ func (s *server) mcpDispatch(r *http.Request, req mcpRequest, sc mcpScope) (mcpR
 			Arguments map[string]any `json:"arguments"`
 		}
 		if err := json.Unmarshal(req.Params, &p); err != nil {
-			resp.Error = &mcpError{-32602, "parâmetros inválidos"}
+			resp.Error = &mcpError{-32602, "parámetros inválidos"}
 			break
 		}
 		t, ok := mcpFindTool(p.Name)
 		if !ok || !t.allowed(sc) {
-			resp.Error = &mcpError{-32602, "ferramenta desconhecida ou não liberada para esta chave: " + p.Name}
+			resp.Error = &mcpError{-32602, "herramienta desconocida o no habilitada para esta llave: " + p.Name}
 			break
 		}
 		resp.Result = s.mcpRunTool(r, t, mcpArgs(p.Arguments), sc)
@@ -1028,7 +1028,7 @@ func (s *server) mcpDispatch(r *http.Request, req mcpRequest, sc mcpScope) (mcpR
 	case "prompts/list":
 		resp.Result = map[string]any{"prompts": []any{}}
 	default:
-		resp.Error = &mcpError{-32601, "método não suportado: " + req.Method}
+		resp.Error = &mcpError{-32601, "método no soportado: " + req.Method}
 	}
 	return resp, true
 }
@@ -1060,10 +1060,10 @@ func (s *server) mcpRunTool(r *http.Request, t mcpTool, a mcpArgs, sc mcpScope) 
 	}
 	if sc.scoped() {
 		if _, ok := s.sessions.Get(sc.SessionID); !ok {
-			return mcpText("a sessão desta chave não existe mais", true)
+			return mcpText("la sesión de esta llave ya no existe", true)
 		}
 		if t.NoSession && !mcpScopedPathAllowed(sc.SessionID, call.Path) {
-			return mcpText("com esta chave só é possível chamar rotas desta sessão (/api/sessions/"+sc.SessionID+"/...), exceto as de administração da conta", true)
+			return mcpText("con esta llave solo se pueden llamar rutas de esta sesión (/api/sessions/"+sc.SessionID+"/...), excepto las de administración de la cuenta", true)
 		}
 		if !t.NoSession {
 			call.Path = "/api/sessions/" + seg(sc.SessionID) + call.Path
@@ -1159,14 +1159,14 @@ func jidPhone(jid string) string {
 func (s *server) mcpResolveSession(ref string) (*Session, error) {
 	list := s.mcpSessionList()
 	if len(list) == 0 {
-		return nil, errors.New("nenhuma sessão de WhatsApp cadastrada no AstraCalls")
+		return nil, errors.New("no hay ninguna sesión de WhatsApp registrada en AstraCalls")
 	}
 	ref = strings.TrimSpace(ref)
 	pick := func(id string) (*Session, error) {
 		if sess, ok := s.sessions.Get(id); ok {
 			return sess, nil
 		}
-		return nil, errors.New("sessão não encontrada: " + ref)
+		return nil, errors.New("sesión no encontrada: " + ref)
 	}
 	if ref == "" {
 		if len(list) == 1 {
@@ -1177,7 +1177,7 @@ func (s *server) mcpResolveSession(ref string) (*Session, error) {
 			names = append(names, fmt.Sprintf("%s (%s, %s)", l.Name, l.Phone, l.ID))
 		}
 		sort.Strings(names)
-		return nil, errors.New("há várias sessões; informe \"session\": " + strings.Join(names, "; "))
+		return nil, errors.New("hay varias sesiones; indica \"session\": " + strings.Join(names, "; "))
 	}
 	digits := normalizePhone(ref)
 	var hits []string
@@ -1193,7 +1193,7 @@ func (s *server) mcpResolveSession(ref string) (*Session, error) {
 		return pick(hits[0])
 	}
 	if len(hits) > 1 {
-		return nil, errors.New("mais de uma sessão com esse nome; use o ID (veja list_sessions)")
+		return nil, errors.New("hay más de una sesión con ese nombre; usa el ID (ver list_sessions)")
 	}
-	return nil, errors.New("sessão não encontrada: " + ref + " (veja list_sessions)")
+	return nil, errors.New("sesión no encontrada: " + ref + " (veja list_sessions)")
 }

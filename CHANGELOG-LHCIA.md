@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.8
+
+- **MCP en español:** las instrucciones, los nombres y descripciones de las herramientas, sus parámetros y los mensajes de error que lee la IA.
+
 ### v1.1.7-lhcia.7
 
 - **Resolver en Chatwoot archiva también los chats donde lo último fue una respuesta del CRM.** WhatsApp exige indicar el último mensaje del chat al archivar, y las respuestas enviadas desde Chatwoot no se guardaban en el historial de AstraCalls. Ahora se guardan, y el archivado va dirigido al identificador interno (LID) del chat. Además, esas respuestas aparecen en el historial que lee el MCP.
