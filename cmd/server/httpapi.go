@@ -265,6 +265,12 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/sessions/{sid}/mcp-keys", s.handleListMCPKeys)
 	mux.HandleFunc("POST /api/sessions/{sid}/mcp-keys", s.handleCreateMCPKey)
 	mux.HandleFunc("DELETE /api/sessions/{sid}/mcp-keys/{kid}", s.handleDeleteMCPKey)
+	// configurações globais: chaves MCP de administrador (todas as sessões)
+	mux.HandleFunc("GET /api/settings/mcp-keys", s.handleListAdminMCPKeys)
+	// sessões cuja inbox foi excluída no Chatwoot (em espera de 24 h)
+	mux.HandleFunc("GET /api/orphans", s.handleListOrphans)
+	mux.HandleFunc("POST /api/settings/mcp-keys", s.handleCreateAdminMCPKey)
+	mux.HandleFunc("DELETE /api/settings/mcp-keys/{kid}", s.handleDeleteAdminMCPKey)
 
 	// Confiabilidade de entrega do webhook de sessão (circuit breaker + DLQ).
 	mux.HandleFunc("GET /api/sessions/{sid}/webhooks/status", s.handleWebhookStatus)

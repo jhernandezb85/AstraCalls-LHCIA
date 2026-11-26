@@ -170,6 +170,7 @@ func (m *SessionManager) processOutboxRow(ctx context.Context, row outboxRow) {
 			_ = m.store.killOutbox(ctx, row.ID, err.Error())
 			return
 		}
+		sess.inboxCheckSoon() // a inbox ainda existe? (ver chatwoot_orphan.go)
 		delay := outboxBackoff(attempts)
 		m.log.Warn("chatwoot outbox: reentrega falhou, reagendando",
 			"id", row.ID, "source", j.SourceID, "attempt", attempts, "delay", delay.String(), "err", err)
@@ -191,6 +192,7 @@ func (s *Session) enqueueChatwoot(j cwJob) {
 		s.log.Error("chatwoot: serializar job da fila falhou", "err", err)
 		return
 	}
+	s.inboxCheckSoon() // a inbox ainda existe? (ver chatwoot_orphan.go)
 	now := nowMillis()
 	if err := s.mgr.store.enqueueOutbox(s.mgr.appCtx, s.id, j.SourceID, payload,
 		now+cwRetryBase.Milliseconds(), now); err != nil {

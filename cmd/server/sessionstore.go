@@ -161,6 +161,31 @@ func newSessionStore(ctx context.Context, db *sql.DB) (*sessionStore, error) {
 		return nil, err
 	}
 
+	// Chaves MCP de administrador (Configurações gerais): todas as sessões. Mesma
+	// forma de mcp_keys, sem sessão (ver settings_global.go).
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS mcp_admin_keys (
+		id           TEXT PRIMARY KEY,
+		name         TEXT NOT NULL DEFAULT '',
+		key_hash     TEXT NOT NULL UNIQUE,
+		prefix       TEXT NOT NULL,
+		read_only    BOOLEAN NOT NULL DEFAULT false,
+		created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+		last_used_at TIMESTAMPTZ
+	)`); err != nil {
+		return nil, err
+	}
+
+	// Inbox de cada sessão no Chatwoot (ver chatwoot_orphan.go): se já foi vista
+	// existindo e, se foi excluída, desde quando (para apagar a sessão após 24 h).
+	if _, err := db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS chatwoot_inbox_watch (
+		session_id   TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+		cfg_key      TEXT NOT NULL,
+		seen         BOOLEAN NOT NULL DEFAULT false,
+		orphan_since BIGINT
+	)`); err != nil {
+		return nil, err
+	}
+
 	return &sessionStore{db: db}, nil
 }
 

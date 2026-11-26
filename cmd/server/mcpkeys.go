@@ -61,6 +61,9 @@ func mcpKeyHash(key string) string {
 // ---------- banco ----------
 
 func (st *sessionStore) createMCPKey(ctx context.Context, sid, name string, readOnly bool) (mcpKey, string, error) {
+	if sid == adminMCPSession {
+		return st.createAdminMCPKey(ctx, name, readOnly)
+	}
 	var n int
 	if err := st.db.QueryRowContext(ctx, `SELECT count(*) FROM mcp_keys WHERE session_id = $1`, sid).Scan(&n); err != nil {
 		return mcpKey{}, "", err
@@ -79,8 +82,13 @@ func (st *sessionStore) createMCPKey(ctx context.Context, sid, name string, read
 var errMCPKeyLimit = errors.New("limite de chaves MCP por sessão atingido")
 
 func (st *sessionStore) listMCPKeys(ctx context.Context, sid string) ([]mcpKey, error) {
-	rows, err := st.db.QueryContext(ctx, `SELECT id, session_id, name, prefix, read_only, created_at, last_used_at
-		FROM mcp_keys WHERE session_id = $1 ORDER BY created_at`, sid)
+	q := `SELECT id, session_id, name, prefix, read_only, created_at, last_used_at
+		FROM mcp_keys WHERE session_id = $1 ORDER BY created_at`
+	if sid == adminMCPSession {
+		q = `SELECT id, $1::text, name, prefix, read_only, created_at, last_used_at
+		FROM mcp_admin_keys ORDER BY created_at`
+	}
+	rows, err := st.db.QueryContext(ctx, q, sid)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +109,11 @@ func (st *sessionStore) listMCPKeys(ctx context.Context, sid string) ([]mcpKey, 
 }
 
 func (st *sessionStore) deleteMCPKey(ctx context.Context, sid, id string) (bool, error) {
-	res, err := st.db.ExecContext(ctx, `DELETE FROM mcp_keys WHERE session_id = $1 AND id = $2`, sid, id)
+	q := `DELETE FROM mcp_keys WHERE session_id = $1 AND id = $2`
+	if sid == adminMCPSession {
+		q = `DELETE FROM mcp_admin_keys WHERE $1::text <> '' AND id = $2`
+	}
+	res, err := st.db.ExecContext(ctx, q, sid, id)
 	if err != nil {
 		return false, err
 	}
@@ -112,15 +124,22 @@ func (st *sessionStore) deleteMCPKey(ctx context.Context, sid, id string) (bool,
 // lookupMCPKey acha a chave pelo hash e marca o último uso (no máximo 1x/min).
 func (st *sessionStore) lookupMCPKey(ctx context.Context, key string) (mcpKey, bool) {
 	var k mcpKey
+	table := "mcp_keys"
 	err := st.db.QueryRowContext(ctx, `SELECT id, session_id, read_only FROM mcp_keys WHERE key_hash = $1`,
 		mcpKeyHash(key)).Scan(&k.ID, &k.SessionID, &k.ReadOnly)
 	if err != nil {
-		return mcpKey{}, false
+		// chave de administrador (Configurações gerais)?
+		table = "mcp_admin_keys"
+		k.SessionID = adminMCPSession
+		if err := st.db.QueryRowContext(ctx, `SELECT id, read_only FROM mcp_admin_keys WHERE key_hash = $1`,
+			mcpKeyHash(key)).Scan(&k.ID, &k.ReadOnly); err != nil {
+			return mcpKey{}, false
+		}
 	}
 	go func(id string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_, _ = st.db.ExecContext(ctx, `UPDATE mcp_keys SET last_used_at = now()
+		_, _ = st.db.ExecContext(ctx, `UPDATE `+table+` SET last_used_at = now()
 			WHERE id = $1 AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')`, id)
 	}(k.ID)
 	return k, true
@@ -215,13 +234,6 @@ func (s *server) handleMCPScoped(w http.ResponseWriter, r *http.Request) {
 		s.serveMCP(w, r, mcpScope{})
 		return
 	}
-	// chave de administrador SÓ para o MCP (todas as sessões), separada da mestra:
-	// pode ser trocada sem mexer no provisioner nem em quem usa a API REST.
-	if admin := os.Getenv("WACALLS_MCP_ADMIN_KEY"); len(admin) >= 24 && key != "" &&
-		subtle.ConstantTimeCompare([]byte(key), []byte(admin)) == 1 {
-		s.serveMCP(w, r, mcpScope{})
-		return
-	}
 	if !strings.HasPrefix(key, mcpKeyPrefix) || s.sessions == nil || s.sessions.store == nil {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="astracalls-mcp"`)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "chave MCP ausente ou inválida"})
@@ -231,6 +243,11 @@ func (s *server) handleMCPScoped(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="astracalls-mcp"`)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "chave MCP ausente ou inválida"})
+		return
+	}
+	if k.SessionID == adminMCPSession {
+		// chave de administrador (Configurações): todas as sessões
+		s.serveMCP(w, r, mcpScope{ReadOnly: k.ReadOnly})
 		return
 	}
 	s.serveMCP(w, r, mcpScope{SessionID: k.SessionID, ReadOnly: k.ReadOnly})

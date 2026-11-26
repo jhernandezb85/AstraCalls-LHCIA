@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { McpDialog } from "@/components/domain/session/McpDialog";
 import { setActiveSession, useSessions } from "@/stores/sessions";
 import { createSession, deleteSession, renameSession } from "@/services/sessions";
 import { EXTENSION_DOWNLOAD_URL } from "@/lib/passkey";
@@ -154,6 +155,7 @@ export const Sidebar = ({ onNavigate }: { onNavigate?: () => void }) => {
         )}
       </div>
 
+      <McpDialog />
       <a
         href={EXTENSION_DOWNLOAD_URL}
         download

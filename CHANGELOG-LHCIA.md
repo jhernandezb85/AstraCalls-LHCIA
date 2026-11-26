@@ -11,6 +11,12 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.5
+
+- **Configuración global en el panel** (botón **Configurações** en la barra lateral). Primera opción: **llaves MCP de administrador**, que dan una sola conexión MCP a todos los números del servidor (con opción de solo lectura). Se crean con un clic, se muestran una vez y se guardan cifradas. Reemplaza la variable `WACALLS_MCP_ADMIN_KEY` de la lhcia.4, que ya no existe.
+- **Bandeja eliminada: nuevo comportamiento** (reemplaza el de la lhcia.4). AstraCalls lo detecta en el momento en que falla una entrega a Chatwoot, y además revisa cada 12 h. Con un 404 confirmado unos minutos después, y solo si antes vio esa bandeja existir: **desvincula el número** de WhatsApp y deja la sesión **24 horas en espera** (configuración, llaves e historial). Si en ese tiempo se liga a una bandeja nueva, sale de la espera. Pasadas 24 h, la sesión se borra por completo. La espera se guarda en la base de datos y sobrevive a reinicios.
+- `GET /api/orphans`: lista las sesiones en espera con su cuenta de Chatwoot y la hora de borrado (lo usará el provisioner para ofrecer "Recuperar").
+
 ### v1.1.7-lhcia.4
 
 - **Archivar en WhatsApp ↔ resolver en Chatwoot (espejo).** Opción por bandeja (`archive_sync`: desactivado por defecto, `resolved` o `pending`). Archivar el chat en WhatsApp resuelve la conversación (o la deja pendiente); desarchivar la reabre. Resolver en Chatwoot archiva el chat en WhatsApp y reabrir lo desarchiva. Los cambios que hace el propio AstraCalls (importación, abrir al responder, el espejo) no rebotan al otro lado, y la sincronización completa al vincular no resuelve conversaciones en masa.

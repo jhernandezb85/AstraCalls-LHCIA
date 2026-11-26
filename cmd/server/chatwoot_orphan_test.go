@@ -5,85 +5,152 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
-func TestOrphanInboxDeletesAfterStrikes(t *testing.T) {
-	var code atomic.Int32
-	code.Store(200)
+// fakeWatch: inboxWatchStore em memória.
+type fakeWatch struct {
+	mu sync.Mutex
+	w  map[string]inboxWatch
+}
+
+func (f *fakeWatch) getInboxWatch(_ context.Context, sid string) (inboxWatch, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	w, ok := f.w[sid]
+	return w, ok
+}
+func (f *fakeWatch) setInboxSeen(_ context.Context, sid, key string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.w[sid] = inboxWatch{key: key, seen: true}
+	return nil
+}
+func (f *fakeWatch) setInboxOrphan(_ context.Context, sid, key string, since int64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if w, ok := f.w[sid]; ok && w.key == key && w.seen {
+		w.orphanSince = since
+		f.w[sid] = w
+	}
+	return nil
+}
+func (f *fakeWatch) orphansBefore(_ context.Context, before int64) ([]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []string
+	for id, w := range f.w {
+		if w.orphanSince != 0 && w.orphanSince < before {
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+type orphanHarness struct {
+	code    atomic.Int32
+	watch   *fakeWatch
+	m       *SessionManager
+	s       *Session
+	logouts []string
+	deletes []string
+}
+
+func newOrphanHarness(t *testing.T) *orphanHarness {
+	h := &orphanHarness{watch: &fakeWatch{w: map[string]inboxWatch{}}}
+	h.code.Store(200)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(int(code.Load()))
+		w.WriteHeader(int(h.code.Load()))
 		_, _ = w.Write([]byte(`{}`))
 	}))
-	defer srv.Close()
+	t.Cleanup(srv.Close)
+	h.s = &Session{id: "orph", log: slog.Default()}
+	h.s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "t", InboxID: 9})
+	h.m = &SessionManager{log: slog.Default(), sessions: map[string]*Session{"orph": h.s}}
 
-	s := &Session{id: "orph1", log: slog.Default()}
-	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "t", InboxID: 9})
-	m := &SessionManager{log: slog.Default(), sessions: map[string]*Session{"orph1": s}}
+	oldStore, oldSleep, oldLogout, oldDelete := orphanStore, orphanSleep, orphanLogout, orphanDelete
+	orphanStore = func(*SessionManager) inboxWatchStore { return h.watch }
+	orphanSleep = func(context.Context, time.Duration) bool { return true }
+	orphanLogout = func(_ *SessionManager, _ context.Context, id string) error { h.logouts = append(h.logouts, id); return nil }
+	orphanDelete = func(_ *SessionManager, _ context.Context, id string) error { h.deletes = append(h.deletes, id); return nil }
+	t.Cleanup(func() { orphanStore, orphanSleep, orphanLogout, orphanDelete = oldStore, oldSleep, oldLogout, oldDelete })
+	return h
+}
 
-	var deleted []string
-	old := deleteOrphanSession
-	deleteOrphanSession = func(_ *SessionManager, _ context.Context, id string) error { deleted = append(deleted, id); return nil }
-	defer func() { deleteOrphanSession = old }()
-
-	strikes := newOrphanState()
-	m.checkOrphanInboxes(context.Background(), strikes) // existe: fica "vista"
-	code.Store(404)
-	m.checkOrphanInboxes(context.Background(), strikes)
-	m.checkOrphanInboxes(context.Background(), strikes)
-	code.Store(500) // Chatwoot caído: zera a contagem, não apaga
-	m.checkOrphanInboxes(context.Background(), strikes)
-	code.Store(404)
-	m.checkOrphanInboxes(context.Background(), strikes)
-	m.checkOrphanInboxes(context.Background(), strikes)
-	if len(deleted) != 0 {
-		t.Fatalf("não pode apagar antes de %d 404 seguidos: %v", orphanStrikes, deleted)
+func TestOrphanSeenThenDeletedLogsOutAndPurgesAfterGrace(t *testing.T) {
+	h := newOrphanHarness(t)
+	ctx := context.Background()
+	h.m.checkInbox(ctx, h.s) // existe: fica "vista"
+	if w, _ := h.watch.getInboxWatch(ctx, "orph"); !w.seen {
+		t.Fatal("inbox existente deve ficar marcada como vista")
 	}
-	m.checkOrphanInboxes(context.Background(), strikes)
-	if len(deleted) != 1 || deleted[0] != "orph1" {
-		t.Fatalf("deveria apagar a sessão órfã: %v", deleted)
+	h.code.Store(404)
+	h.m.checkInbox(ctx, h.s)
+	if len(h.logouts) != 1 {
+		t.Fatalf("404 confirmado deve desvincular o número: %v", h.logouts)
+	}
+	w, _ := h.watch.getInboxWatch(ctx, "orph")
+	if w.orphanSince == 0 {
+		t.Fatal("deve marcar a sessão como órfã")
+	}
+	h.m.purgeOrphans(ctx)
+	if len(h.deletes) != 0 {
+		t.Fatal("não apaga antes de 24 h")
+	}
+	// passaram 25 h
+	h.watch.w["orph"] = inboxWatch{key: w.key, seen: true, orphanSince: time.Now().Add(-25 * time.Hour).UnixMilli()}
+	h.m.purgeOrphans(ctx)
+	if len(h.deletes) != 1 {
+		t.Fatalf("após 24 h apaga a sessão: %v", h.deletes)
+	}
+	// verificar de novo não desvincula outra vez
+	h.m.checkInbox(ctx, h.s)
+	if len(h.logouts) != 1 {
+		t.Fatal("sessão já órfã não é desvinculada de novo")
 	}
 }
 
-func TestOrphanInboxKeepsExisting(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"id":9}`))
-	}))
-	defer srv.Close()
-	s := &Session{id: "orph2", log: slog.Default()}
-	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "t", InboxID: 9})
-	m := &SessionManager{log: slog.Default(), sessions: map[string]*Session{"orph2": s}}
-	var deleted int
-	old := deleteOrphanSession
-	deleteOrphanSession = func(_ *SessionManager, _ context.Context, _ string) error { deleted++; return nil }
-	defer func() { deleteOrphanSession = old }()
-	strikes := newOrphanState()
-	for i := 0; i < 5; i++ {
-		m.checkOrphanInboxes(context.Background(), strikes)
+func TestOrphanNeverSeenIsKept(t *testing.T) {
+	h := newOrphanHarness(t)
+	h.code.Store(404)
+	for i := 0; i < 3; i++ {
+		h.m.checkInbox(context.Background(), h.s)
 	}
-	if deleted != 0 {
-		t.Fatal("inbox existente nunca apaga")
+	if len(h.logouts) != 0 {
+		t.Fatal("inbox nunca vista existindo (config antiga) não desvincula")
 	}
 }
 
-func TestOrphanNeverSeenInboxIsKept(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(404)
-	}))
-	defer srv.Close()
-	s := &Session{id: "orph3", log: slog.Default()}
-	s.setChatwoot(ChatwootConfig{URL: srv.URL, AccountID: 1, AccountToken: "t", InboxID: 9})
-	m := &SessionManager{log: slog.Default(), sessions: map[string]*Session{"orph3": s}}
-	var deleted int
-	old := deleteOrphanSession
-	deleteOrphanSession = func(_ *SessionManager, _ context.Context, _ string) error { deleted++; return nil }
-	defer func() { deleteOrphanSession = old }()
-	st := newOrphanState()
-	for i := 0; i < 6; i++ {
-		m.checkOrphanInboxes(context.Background(), st)
+func TestOrphanTransientErrorsIgnored(t *testing.T) {
+	h := newOrphanHarness(t)
+	ctx := context.Background()
+	h.m.checkInbox(ctx, h.s)
+	for _, c := range []int32{500, 502, 401} {
+		h.code.Store(c)
+		h.m.checkInbox(ctx, h.s)
 	}
-	if deleted != 0 {
-		t.Fatal("inbox que nunca se viu existir (config antiga) não apaga a sessão")
+	if len(h.logouts) != 0 {
+		t.Fatal("erros que não são 404 nunca desvinculam")
+	}
+}
+
+func TestOrphanRelinkedInboxIsNotOrphan(t *testing.T) {
+	h := newOrphanHarness(t)
+	ctx := context.Background()
+	h.m.checkInbox(ctx, h.s)
+	h.code.Store(404)
+	// durante a confirmação, a sessão é ligada a outra inbox (recuperada)
+	orphanSleep = func(context.Context, time.Duration) bool {
+		cfg := h.s.getChatwoot()
+		cfg.InboxID = 10
+		h.s.setChatwoot(cfg)
+		return true
+	}
+	h.m.checkInbox(ctx, h.s)
+	if len(h.logouts) != 0 {
+		t.Fatal("sessão religada a outra inbox não é desvinculada")
 	}
 }

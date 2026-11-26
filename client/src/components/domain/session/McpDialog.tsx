@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Bot, Loader2, Plus, Trash2, ArrowLeft, Copy, Check, KeyRound } from "lucide-react";
+import { Bot, Loader2, Plus, Trash2, ArrowLeft, Copy, Check, KeyRound, Settings } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,7 +15,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { listMcpKeys, createMcpKey, deleteMcpKey, type McpKey, type McpKeyCreated } from "@/services/mcp";
+import {
+  listMcpKeys,
+  createMcpKey,
+  deleteMcpKey,
+  listAdminMcpKeys,
+  createAdminMcpKey,
+  deleteAdminMcpKey,
+  type McpKey,
+  type McpKeyCreated,
+} from "@/services/mcp";
 
 const fmtDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "nunca";
@@ -51,7 +60,9 @@ const CopyField = ({ label, value, multiline }: { label: string; value: string; 
 
 type View = "list" | "new" | "created";
 
-export const McpDialog = ({ sid }: { sid: string }) => {
+// Sem sid = Configurações gerais: chaves MCP de administrador (todas as sessões).
+export const McpDialog = ({ sid, className }: { sid?: string; className?: string }) => {
+  const admin = !sid;
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [keys, setKeys] = useState<McpKey[]>([]);
@@ -63,13 +74,13 @@ export const McpDialog = ({ sid }: { sid: string }) => {
 
   const load = useCallback(
     () =>
-      listMcpKeys(sid)
+      (admin ? listAdminMcpKeys() : listMcpKeys(sid!))
         .then((r) => {
           setKeys(r.keys ?? []);
           setMax(r.max || 20);
         })
         .catch(() => {}),
-    [sid],
+    [sid, admin],
   );
 
   useEffect(() => {
@@ -92,7 +103,8 @@ export const McpDialog = ({ sid }: { sid: string }) => {
   const create = async () => {
     setBusy(true);
     try {
-      const r = await createMcpKey(sid, { name: name.trim(), readOnly });
+      const body = { name: name.trim(), readOnly };
+      const r = admin ? await createAdminMcpKey(body) : await createMcpKey(sid!, body);
       setCreated(r);
       setView("created");
       await load();
@@ -107,7 +119,7 @@ export const McpDialog = ({ sid }: { sid: string }) => {
     if (!window.confirm(`Revogar a chave ${k.name || k.prefix}? Quem estiver usando perde o acesso na hora.`)) return;
     setBusy(true);
     try {
-      await deleteMcpKey(sid, k.id);
+      await (admin ? deleteAdminMcpKey(k.id) : deleteMcpKey(sid!, k.id));
       toast.success("Chave revogada");
       await load();
     } catch (e) {
@@ -119,9 +131,20 @@ export const McpDialog = ({ sid }: { sid: string }) => {
 
   const list = (
     <div className="space-y-3">
+      {admin && (
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">Chave MCP de administrador</p>
+          <p className="text-xs text-muted-foreground">
+            Uma só conexão MCP para todas as contas (números) deste servidor: o agente escolhe o número em cada ação.
+            Use somente leitura para analisar conversas sem risco de enviar nada.
+          </p>
+        </div>
+      )}
       {keys.length === 0 && (
         <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Nenhuma chave MCP nesta sessão. Crie uma para conectar um agente de IA a este número.
+          {admin
+            ? "Nenhuma chave de administrador. Crie uma para conectar um agente de IA a todos os números."
+            : "Nenhuma chave MCP nesta sessão. Crie uma para conectar um agente de IA a este número."}
         </p>
       )}
       {keys.map((k) => (
@@ -160,7 +183,9 @@ export const McpDialog = ({ sid }: { sid: string }) => {
         <Switch checked={readOnly} onCheckedChange={setReadOnly} aria-label="Somente leitura" />
       </label>
       <p className="text-xs text-muted-foreground">
-        A chave só dá acesso a este número. Não permite parear, desconectar nem mexer em webhooks, Chatwoot ou SIP.
+        {admin
+          ? "A chave dá acesso a TODOS os números deste servidor, inclusive à API completa (api_request). Guarde-a como a chave-mestra."
+          : "A chave só dá acesso a este número. Não permite parear, desconectar nem mexer em webhooks, Chatwoot ou SIP."}
       </p>
     </div>
   );
@@ -202,22 +227,45 @@ export const McpDialog = ({ sid }: { sid: string }) => {
     </div>
   );
 
-  const title = view === "list" ? "MCP — agentes de IA" : view === "new" ? "Nova chave MCP" : "Chave criada";
+  const title =
+    view === "list"
+      ? admin
+        ? "Configurações gerais"
+        : "MCP — agentes de IA"
+      : view === "new"
+        ? admin
+          ? "Nova chave de administrador"
+          : "Nova chave MCP"
+        : "Chave criada";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={keys.length ? "default" : "outline"} size="sm" title="MCP (agentes de IA)">
-          <Bot className="h-4 w-4" />
-          <span className="hidden sm:inline">MCP{keys.length > 1 ? ` (${keys.length})` : ""}</span>
-        </Button>
+        {admin ? (
+          <button
+            className={
+              className ??
+              "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            }
+            title="Configurações gerais do AstraCalls"
+          >
+            <Settings className="h-3.5 w-3.5 shrink-0" />
+            Configurações
+          </button>
+        ) : (
+          <Button variant={keys.length ? "default" : "outline"} size="sm" title="MCP (agentes de IA)">
+            <Bot className="h-4 w-4" />
+            <span className="hidden sm:inline">MCP{keys.length > 1 ? ` (${keys.length})` : ""}</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Conecte Claude, ChatGPT, Cursor, n8n e outros agentes de IA a este número pelo MCP: eles enviam mensagens,
-            leem conversas, fazem ligações e gerenciam grupos.
+            {admin
+              ? "Opções que valem para todo o AstraCalls."
+              : "Conecte Claude, ChatGPT, Cursor, n8n e outros agentes de IA a este número pelo MCP: eles enviam mensagens, leem conversas, fazem ligações e gerenciam grupos."}
           </DialogDescription>
         </DialogHeader>
 

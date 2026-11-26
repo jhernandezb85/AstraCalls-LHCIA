@@ -1834,6 +1834,7 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	// parte da config atual: o que não vier no payload é preservado (senão salvar
 	// pelo painel zeraria flags como groups/sign_msg, que ele não envia).
 	cfg := sess.getChatwoot()
+	prevWatchKey := inboxWatchKey(cfg)
 	if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 		return
@@ -1871,6 +1872,11 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	sess.setChatwoot(cfg)
 	b, _ := json.Marshal(cfg)
 	_ = sess.mgr.store.setChatwoot(r.Context(), sess.id, string(b))
+	// ligada a outra inbox (ex.: sessão órfã recuperada): sai da espera de exclusão
+	if k := inboxWatchKey(cfg); k != prevWatchKey {
+		_ = sess.mgr.store.resetInboxWatch(r.Context(), sess.id, k)
+		go sess.mgr.checkInbox(sess.mgr.appCtx, sess)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"chatwoot": publicChatwootCfg(cfg), "device_bot": cfg.DeviceBotToken != ""})
 }
 

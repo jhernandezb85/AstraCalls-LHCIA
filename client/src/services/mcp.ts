@@ -27,3 +27,12 @@ export const createMcpKey = (sid: string, body: { name: string; readOnly: boolea
   apiPost<McpKeyCreated>(`/api/sessions/${sid}/mcp-keys`, body);
 
 export const deleteMcpKey = (sid: string, id: string) => apiDelete(`/api/sessions/${sid}/mcp-keys/${id}`);
+
+// Configurações globais: chaves MCP de administrador (todas as sessões).
+export const listAdminMcpKeys = () =>
+  apiGet<{ keys: McpKey[]; max: number; endpoint: string }>(`/api/settings/mcp-keys`);
+
+export const createAdminMcpKey = (body: { name: string; readOnly: boolean }) =>
+  apiPost<McpKeyCreated>(`/api/settings/mcp-keys`, body);
+
+export const deleteAdminMcpKey = (id: string) => apiDelete(`/api/settings/mcp-keys/${id}`);
