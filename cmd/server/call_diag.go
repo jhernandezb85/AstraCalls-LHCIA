@@ -2,6 +2,8 @@ package main
 
 import (
 	"strings"
+	"sync"
+	"time"
 
 	waBinary "go.mau.fi/whatsmeow/binary"
 	"go.mau.fi/whatsmeow/types/events"
@@ -15,6 +17,23 @@ import (
 // llamadas que el celular sincroniza (CallLogAction por app state y
 // CallLogMessage por mensaje). Solo registra: no cambia el comportamiento.
 
+// diagSyncSeen limita el log de sincronizaciones a una línea por tipo y minuto
+// (al reconectar llegan miles de golpe).
+var (
+	diagSyncMu   sync.Mutex
+	diagSyncSeen = map[string]time.Time{}
+)
+
+func diagSyncOnce(kind string) bool {
+	diagSyncMu.Lock()
+	defer diagSyncMu.Unlock()
+	if t, ok := diagSyncSeen[kind]; ok && time.Since(t) < time.Minute {
+		return false
+	}
+	diagSyncSeen[kind] = time.Now()
+	return true
+}
+
 func nodeSummary(n *waBinary.Node) (tag string, attrs map[string]string) {
 	attrs = map[string]string{}
 	if n == nil {
@@ -22,13 +41,10 @@ func nodeSummary(n *waBinary.Node) (tag string, attrs map[string]string) {
 	}
 	tag = n.Tag
 	for k, v := range n.Attrs {
-		switch k {
-		case "reason", "call-creator", "call-id", "count", "platform", "from":
-			if s, ok := v.(string); ok {
-				attrs[k] = s
-			} else {
-				attrs[k] = stringify(v)
-			}
+		if s, ok := v.(string); ok {
+			attrs[k] = s
+		} else {
+			attrs[k] = stringify(v)
 		}
 	}
 	return tag, attrs
@@ -61,9 +77,19 @@ func (s *Session) diagCallEvent(rawEvt any) {
 	logStanza := func(kind, from, creator, callID string, data *waBinary.Node) {
 		tag, attrs := nodeSummary(data)
 		_, known := s.reg.get(callID)
-		s.log.Info("diag llamada: señal", "kind", kind, "from", from, "creator", creator,
+		args := []any{"kind", kind, "from", from, "creator", creator,
 			"call_id", callID, "tag", tag, "attrs", attrs, "children", childTags(data),
-			"from_own", own != "" && strings.HasPrefix(from, own), "known", known)
+			"from_own", own != "" && strings.HasPrefix(from, own), "known", known}
+		// La señal completa (salvo el offer, que es largo y trae claves): para
+		// comparar el terminate de "colgó el cliente" con el de "contestada en el celular".
+		if data != nil && kind != "offer" {
+			x := data.String()
+			if len(x) > 2000 {
+				x = x[:2000]
+			}
+			args = append(args, "xml", x)
+		}
+		s.log.Info("diag llamada: señal", args...)
 	}
 	switch evt := rawEvt.(type) {
 	case *events.CallOffer:
@@ -90,7 +116,19 @@ func (s *Session) diagCallEvent(rawEvt any) {
 				"children", childTags(evt.Node))
 		}
 	case *events.AppState:
-		if evt.SyncActionValue == nil || evt.GetCallLogAction() == nil {
+		if evt.SyncActionValue == nil {
+			return
+		}
+		if evt.GetCallLogAction() == nil {
+			// Cualquier otra sincronización del celular: solo el tipo, para ver si el
+			// registro de llamadas llega con otro nombre.
+			kind := ""
+			if len(evt.Index) > 0 {
+				kind = evt.Index[0]
+			}
+			if diagSyncOnce(kind) {
+				s.log.Info("diag llamada: sync", "kind", kind)
+			}
 			return
 		}
 		r := evt.GetCallLogAction().GetCallLogRecord()

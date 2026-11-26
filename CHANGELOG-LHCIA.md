@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.13
+
+- **Diagnóstico de llamadas, más detalle:** las líneas `diag llamada: señal` traen todos los atributos y la señal completa (salvo el offer), para distinguir "colgó el cliente" de "contestada en el celular". Nueva línea `diag llamada: sync` con el tipo de cada sincronización que manda el celular (una por tipo y minuto).
+
 ### v1.1.7-lhcia.12
 
 - **Diagnóstico de llamadas hechas o contestadas en el celular:** el log registra (líneas `diag llamada:`) cada señal de llamada que recibe el dispositivo vinculado y el registro de llamadas que sincroniza el celular (`CallLogAction` y `CallLogMessage`). Solo registra; no cambia el comportamiento. Sirve para corregir que la llamada siga sonando en el CRM cuando se contesta o se corta en el celular, y para dejar en Chatwoot las llamadas hechas desde el celular.
