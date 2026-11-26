@@ -23,6 +23,10 @@ import (
 // sessão (config, chaves, histórico) fica 24 h esperando: se nesse tempo for
 // religada a uma inbox nova (provisioner → "Recuperar", com QR), segue igual.
 // Passadas 24 h, é apagada por completo. Tudo fica no banco: sobrevive a restart.
+//
+// Recuperar = ligar a sessão a outra inbox E vincular o número de novo (QR). O
+// prazo de 24 h só para quando o número volta a conectar: trocar a inbox sem
+// escanear o QR (recuperação começada e abandonada) não salva a sessão.
 
 var (
 	orphanSweepEvery   = 12 * time.Hour
@@ -73,10 +77,18 @@ func (st *sessionStore) getInboxWatch(ctx context.Context, sid string) (inboxWat
 	return w, true
 }
 
+// setInboxSeen marca a inbox como vista. Não mexe no prazo de exclusão: uma
+// sessão órfã religada a uma inbox nova continua órfã até o número reconectar.
 func (st *sessionStore) setInboxSeen(ctx context.Context, sid, key string) error {
 	_, err := st.db.ExecContext(ctx, `INSERT INTO chatwoot_inbox_watch (session_id, cfg_key, seen, orphan_since)
 		VALUES ($1, $2, true, NULL)
-		ON CONFLICT (session_id) DO UPDATE SET cfg_key = EXCLUDED.cfg_key, seen = true, orphan_since = NULL`, sid, key)
+		ON CONFLICT (session_id) DO UPDATE SET cfg_key = EXCLUDED.cfg_key, seen = true`, sid, key)
+	return err
+}
+
+// clearInboxOrphan tira a sessão da espera de exclusão (o número reconectou).
+func (st *sessionStore) clearInboxOrphan(ctx context.Context, sid string) error {
+	_, err := st.db.ExecContext(ctx, `UPDATE chatwoot_inbox_watch SET orphan_since = NULL WHERE session_id = $1`, sid)
 	return err
 }
 
@@ -86,11 +98,12 @@ func (st *sessionStore) setInboxOrphan(ctx context.Context, sid, key string, sin
 	return err
 }
 
-// resetInboxWatch: a sessão foi ligada a outra inbox (recuperada): começa do zero.
+// resetInboxWatch: a sessão foi ligada a outra inbox. A nova inbox ainda não foi
+// vista; o prazo de exclusão (se órfã) continua até o número reconectar.
 func (st *sessionStore) resetInboxWatch(ctx context.Context, sid, key string) error {
 	_, err := st.db.ExecContext(ctx, `INSERT INTO chatwoot_inbox_watch (session_id, cfg_key, seen, orphan_since)
 		VALUES ($1, $2, false, NULL)
-		ON CONFLICT (session_id) DO UPDATE SET cfg_key = EXCLUDED.cfg_key, seen = false, orphan_since = NULL`, sid, key)
+		ON CONFLICT (session_id) DO UPDATE SET cfg_key = EXCLUDED.cfg_key, seen = false`, sid, key)
 	return err
 }
 
@@ -144,6 +157,7 @@ type inboxWatchStore interface {
 	getInboxWatch(ctx context.Context, sid string) (inboxWatch, bool)
 	setInboxSeen(ctx context.Context, sid, key string) error
 	setInboxOrphan(ctx context.Context, sid, key string, since int64) error
+	clearInboxOrphan(ctx context.Context, sid string) error
 	orphansBefore(ctx context.Context, before int64) ([]string, error)
 }
 
@@ -181,12 +195,34 @@ var (
 	orphanSleep  func(ctx context.Context, d time.Duration) bool
 	orphanLogout func(m *SessionManager, ctx context.Context, id string) error
 	orphanDelete func(m *SessionManager, ctx context.Context, id string) error
+	// orphanLinked: o número está vinculado (pareado) de novo.
+	orphanLinked func(s *Session) bool
 )
 
 func init() { // em init() para não criar ciclo de inicialização com os métodos
 	orphanSleep = sleepCtx
 	orphanLogout = func(m *SessionManager, ctx context.Context, id string) error { return m.Logout(ctx, id) }
 	orphanDelete = func(m *SessionManager, ctx context.Context, id string) error { return m.Delete(ctx, id) }
+	orphanLinked = func(s *Session) bool {
+		return s.client != nil && s.client.Store != nil && s.client.Store.ID != nil
+	}
+}
+
+// orphanRelinked: o número voltou a conectar (QR escaneado). Se a sessão estava
+// órfã, sai da espera de exclusão: foi recuperada.
+func (s *Session) orphanRelinked(ctx context.Context) {
+	if s.mgr == nil {
+		return
+	}
+	st := orphanStore(s.mgr)
+	if st == nil {
+		return
+	}
+	if w, ok := st.getInboxWatch(ctx, s.id); ok && w.orphanSince != 0 {
+		if err := st.clearInboxOrphan(ctx, s.id); err == nil {
+			s.log.Info("chatwoot: sessão órfã recuperada (número vinculado de novo)", "session", s.id)
+		}
+	}
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) bool {
@@ -259,7 +295,13 @@ func (m *SessionManager) purgeOrphans(ctx context.Context) {
 		return
 	}
 	for _, id := range ids {
-		if _, ok := m.Get(id); !ok {
+		s, ok := m.Get(id)
+		if !ok {
+			continue
+		}
+		if orphanLinked(s) {
+			// vinculado de novo (recuperada) mas a marca ficou: limpa e não apaga
+			_ = st.clearInboxOrphan(ctx, id)
 			continue
 		}
 		m.log.Warn("chatwoot: sessão órfã há mais de 24 h; apagando", "session", id)

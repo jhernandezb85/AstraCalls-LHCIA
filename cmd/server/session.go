@@ -780,6 +780,7 @@ func (s *Session) handleEvent(rawEvt any) {
 			_ = s.mgr.store.setJID(s.mgr.appCtx, s.id, id.String())
 		}
 		s.setAuth(AuthSnapshot{State: "open", Paired: true})
+		go s.orphanRelinked(s.mgr.appCtx) // sessão órfã recuperada com QR: sai da espera de exclusão
 		// reconectou: rearma o aviso de queda para a próxima desconexão real.
 		s.mu.Lock()
 		s.downAlerted = false

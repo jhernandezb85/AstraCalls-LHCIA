@@ -11,6 +11,10 @@ Versiones de la imagen `ghcr.io/jhernandezb85/astracalls`. Formato `vX.Y.Z-lhcia
 `latest` apunta a la última versión publicada. Para volver atrás, poner en el compose la
 versión anterior (o la oficial `astraonline/astracalls:vX.Y.Z`).
 
+### v1.1.7-lhcia.15
+
+- **Recuperar un número desvinculado:** el plazo de 24 h de una sesión cuya bandeja se borró solo se detiene cuando el número **vuelve a vincularse** (QR o código). Cambiarle la bandeja sin escanear el QR (recuperación abandonada) ya no la salva del borrado. Lo usa el provisioner `prov-v1.0.8` ("Recuperar un número desvinculado").
+
 ### v1.1.7-lhcia.14
 
 - **Panel completo en español:** los diálogos técnicos (SIP/PBX, Webhooks, Proxy, Chatwoot, Formularios, Opciones), el selector de micrófono y parlante, "Otras llamadas activas" y los avisos de error de llamadas, video y passkey.

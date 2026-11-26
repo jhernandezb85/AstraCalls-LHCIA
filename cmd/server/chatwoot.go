@@ -1872,7 +1872,8 @@ func (s *server) handleSetChatwoot(w http.ResponseWriter, r *http.Request) {
 	sess.setChatwoot(cfg)
 	b, _ := json.Marshal(cfg)
 	_ = sess.mgr.store.setChatwoot(r.Context(), sess.id, string(b))
-	// ligada a outra inbox (ex.: sessão órfã recuperada): sai da espera de exclusão
+	// ligada a outra inbox (ex.: recuperando uma sessão órfã). A espera de exclusão
+	// só termina quando o número vincular de novo (ver orphanRelinked).
 	if k := inboxWatchKey(cfg); k != prevWatchKey {
 		_ = sess.mgr.store.resetInboxWatch(r.Context(), sess.id, k)
 		go sess.mgr.checkInbox(sess.mgr.appCtx, sess)
