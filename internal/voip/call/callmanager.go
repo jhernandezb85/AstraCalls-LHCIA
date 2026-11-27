@@ -301,7 +301,22 @@ func (m *CallManager) EndCall(ctx context.Context, reason core.EndCallReason) er
 // sendEndStanza envia reject/terminate com 1 nova tentativa: socket em
 // reconexão perdia o stanza e o outro lado seguia tocando/em chamada.
 func (m *CallManager) sendEndStanza(ctx context.Context, node waBinary.Node) {
-	if _, err := m.sock.Query(ctx, node); err == nil || ctx.Err() != nil {
+	resp, err := m.sock.Query(ctx, node)
+	// Diagnóstico (caso "rechazo en el CRM no corta el celular"): qué stanza se
+	// mandó y qué respondió WhatsApp.
+	respXML := ""
+	if resp != nil {
+		respXML = resp.String()
+		if len(respXML) > 1000 {
+			respXML = respXML[:1000]
+		}
+	}
+	sent := node.String()
+	if len(sent) > 1000 {
+		sent = sent[:1000]
+	}
+	m.log.Info("diag llamada: fin enviado", "tag", node.Tag, "xml", sent, "resp", respXML, "err", err)
+	if err == nil || ctx.Err() != nil {
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
