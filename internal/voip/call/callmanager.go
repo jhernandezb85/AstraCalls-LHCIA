@@ -301,6 +301,11 @@ func (m *CallManager) EndCall(ctx context.Context, reason core.EndCallReason) er
 // sendEndStanza envia reject/terminate com 1 nova tentativa: socket em
 // reconexão perdia o stanza e o outro lado seguia tocando/em chamada.
 func (m *CallManager) sendEndStanza(ctx context.Context, node waBinary.Node) {
+	// El ctx suele ser el de la petición HTTP, que se cancela al responder; como
+	// esto corre en una goroutine, el reject podía quedar sin enviarse (el celular
+	// seguía sonando). Se desacopla de la cancelación y se acota con timeout.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
+	defer cancel()
 	resp, err := m.sock.Query(ctx, node)
 	// Diagnóstico (caso "rechazo en el CRM no corta el celular"): qué stanza se
 	// mandó y qué respondió WhatsApp.
