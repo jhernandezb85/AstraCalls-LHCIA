@@ -246,7 +246,10 @@
 
   function closePanel() {
     if (call) hangup();
-    else if (incoming) rejectIncoming();
+    // Llamada entrante sonando: la X solo oculta el panel y calla el timbre AQUÍ.
+    // Rechazar es solo el botón rojo; si no, cerrar el widget le cortaba la
+    // llamada al cliente (y al celular y a los demás agentes).
+    else if (incoming) incoming.silenced = true;
     stopRing();
     var p = document.getElementById("wacalls-panel");
     if (p) p.remove();
